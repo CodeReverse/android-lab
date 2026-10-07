@@ -1,0 +1,72 @@
+{
+  "verifiedAt": "2026-10-06",
+  "scope": "国内公司中文公开面经；便利样本，不代表行业频率或 P7 要求",
+  "sources": [
+    {
+      "id": "infra",
+      "company": "字节跳动",
+      "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+      "publishedAt": "2026-03-03",
+      "dateEvidence": "原帖 createdAt=1772537400000（北京时间）；面试日期未明",
+      "selectedItems": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "answerArticle": "interview-ai-infra-byte"
+    },
+    {
+      "id": "tencent",
+      "company": "腾讯",
+      "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+      "publishedAt": "2025-12-29",
+      "dateEvidence": "原帖发布时间；正文称 9/16 面试，未单独写年份",
+      "selectedItems": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "answerArticle": "interview-ai-tencent"
+    },
+    {
+      "id": "agent",
+      "company": "字节跳动",
+      "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+      "publishedAt": null,
+      "dateEvidence": "页面 09-15、正文 9.15；年份未明确核验，不补造",
+      "selectedItems": [
+        4,
+        5,
+        6,
+        12,
+        13,
+        16,
+        17,
+        18
+      ],
+      "answerArticle": "interview-ai-agent-byte"
+    },
+    {
+      "id": "qwen",
+      "company": "阿里巴巴（千问）",
+      "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+      "publishedAt": "2026-09-21",
+      "dateEvidence": "原帖 createdAt=1789977653000（北京时间）；正文称 9/16 面试",
+      "selectedItems": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        8,
+        9,
+        10
+      ],
+      "answerArticle": "interview-ai-qwen"
+    }
+  ]
+}

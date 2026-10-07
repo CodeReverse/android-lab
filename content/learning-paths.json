@@ -1,0 +1,176 @@
+{
+  "compose": {
+    "core": [
+      "compose-state",
+      "compose-snapshot",
+      "compose-slots",
+      "compose-compiler",
+      "compose-phases",
+      "compose-effects"
+    ],
+    "stages": {
+      "compose-stage-0": [
+        "compose-state"
+      ],
+      "compose-stage-1": [
+        "compose-state",
+        "compose-phases"
+      ],
+      "compose-stage-2": [
+        "compose-state",
+        "state-restoration"
+      ],
+      "compose-stage-3": [
+        "compose-effects",
+        "flow-state"
+      ],
+      "compose-stage-4": [
+        "compose-phases"
+      ],
+      "compose-stage-5": [
+        "compose-slots",
+        "compose-phases"
+      ],
+      "compose-stage-6": [
+        "compose-snapshot"
+      ],
+      "compose-stage-7": [
+        "compose-slots"
+      ],
+      "compose-stage-8": [
+        "compose-compiler"
+      ],
+      "compose-stage-9": [
+        "compose-phases",
+        "performance-proof",
+        "testing-strategy"
+      ],
+      "compose-stage-10": [
+        "compose-effects",
+        "architecture-evolution"
+      ]
+    },
+    "title": "Compose：从 State 到编译器",
+    "category": "compose",
+    "overview": "compose-roadmap",
+    "description": "六篇机制正文与十一阶段地图；随时跳读，不设置关卡。",
+    "tracks": []
+  },
+  "ai": {
+    "title": "AI：从通用原理到端侧工程",
+    "category": "ai",
+    "overview": "ai-roadmap",
+    "description": "按问题选择主线，自由跳读；原理、工程取舍、面经解答分开查阅。",
+    "core": [
+      "ai-transformer",
+      "ai-inference",
+      "ai-rag-pipeline",
+      "ai-agent-runtime",
+      "ai-quality",
+      "ai-edge-architecture"
+    ],
+    "stages": {},
+    "tracks": [
+      {
+        "title": "大模型原理与推理",
+        "description": "从 token 和训练方法到 KV 内存与服务调度",
+        "articles": [
+          "ai-transformer",
+          "ai-training",
+          "ai-inference",
+          "ai-serving"
+        ]
+      },
+      {
+        "title": "RAG 与 Agent 应用",
+        "description": "从证据召回到工具执行、状态恢复与上下文",
+        "articles": [
+          "ai-rag-pipeline",
+          "ai-retrieval",
+          "ai-agent-runtime",
+          "ai-tools-context"
+        ]
+      },
+      {
+        "title": "端侧 AI 专项",
+        "description": "端云决策 → 引擎与后端 → 量化 → 持续性能 → 多模态",
+        "articles": [
+          "ai-edge-architecture",
+          "ai-edge-runtime",
+          "ai-quantization",
+          "ai-edge-performance",
+          "ai-multimodal"
+        ]
+      },
+      {
+        "title": "质量与研发实践",
+        "description": "评测、代码审查、流式体验与原有入门文章",
+        "articles": [
+          "ai-quality",
+          "ai-coding",
+          "ai-client",
+          "ai-evaluation"
+        ]
+      },
+      {
+        "title": "公开面经 AI 逐题解答",
+        "description": "4 份原帖的 26 项 AI 节选；原创答案与编辑追问分开",
+        "articles": [
+          "interview-ai-infra-byte",
+          "interview-ai-tencent",
+          "interview-ai-agent-byte",
+          "interview-ai-qwen"
+        ]
+      }
+    ]
+  },
+  "runtime": {
+    "title": "运行时与并发：逐层追问",
+    "category": "languages",
+    "overview": "runtime-roadmap",
+    "description": "JVM → JMM → 线程与锁 → GC → ART → Handler/OOM；每问附答案，自由跳读。",
+    "core": [
+      "jvm-runtime",
+      "jmm-concurrency",
+      "java-threads",
+      "java-locks",
+      "gc-runtime",
+      "memory-art",
+      "handler",
+      "oom-diagnosis"
+    ],
+    "stages": {},
+    "tracks": [
+      {
+        "title": "Java 运行与并发契约",
+        "description": "定义、结构、程序运行、可见性与执行调度",
+        "articles": [
+          "jvm-runtime",
+          "jmm-concurrency",
+          "java-threads",
+          "java-locks"
+        ]
+      },
+      {
+        "title": "内存、Android 与故障现场",
+        "description": "可达性与回收 → ART → 消息循环 → OOM 证据链",
+        "articles": [
+          "gc-runtime",
+          "memory-art",
+          "handler",
+          "oom-diagnosis"
+        ]
+      },
+      {
+        "title": "继续深入 Kotlin 与系统交互",
+        "description": "协程与 Flow、Binder、ANR 的关联追问",
+        "articles": [
+          "coroutines",
+          "flow-state",
+          "binder",
+          "anr-diagnosis"
+        ]
+      }
+    ]
+  }
+}

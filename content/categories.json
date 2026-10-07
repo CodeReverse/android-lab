@@ -1,0 +1,172 @@
+[
+  {
+    "id": "android",
+    "name": "Android 相关技术",
+    "group": "技术知识",
+    "description": "从生命周期到 Framework 与系统运行机制",
+    "topics": [
+      "Handler / Binder",
+      "View 与渲染",
+      "ART / 内存"
+    ],
+    "icon": "Smartphone",
+    "order": 1
+  },
+  {
+    "id": "network",
+    "name": "计算机网络",
+    "group": "技术知识",
+    "description": "理解请求全链路、协议与弱网下的可靠性",
+    "topics": [
+      "TCP / TLS / HTTP",
+      "OkHttp",
+      "缓存与重试"
+    ],
+    "icon": "Network",
+    "order": 2
+  },
+  {
+    "id": "cross-platform",
+    "name": "跨端技术",
+    "group": "技术知识",
+    "description": "比较技术路线，理解复用边界与工程取舍",
+    "topics": [
+      "Flutter / RN",
+      "JSBridge",
+      "KMP / CMP"
+    ],
+    "icon": "Layers",
+    "order": 3
+  },
+  {
+    "id": "languages",
+    "name": "Java / Kotlin",
+    "group": "技术知识",
+    "description": "语言、并发模型与协程的底层执行过程",
+    "topics": [
+      "JMM / 并发",
+      "协程 / Flow",
+      "编译机制"
+    ],
+    "icon": "Braces",
+    "order": 4
+  },
+  {
+    "id": "compose",
+    "name": "Compose",
+    "group": "技术知识",
+    "description": "从状态与布局到 Snapshot、Runtime 和编译器",
+    "topics": [
+      "State / 重组",
+      "SlotTable",
+      "Compiler"
+    ],
+    "icon": "Blocks",
+    "order": 5
+  },
+  {
+    "id": "algorithms",
+    "name": "高频面试算法",
+    "group": "技术知识",
+    "description": "有面经出处的力扣中国原题，精简而准确",
+    "topics": [
+      "链表 / 树",
+      "滑动窗口",
+      "动态规划"
+    ],
+    "icon": "Binary",
+    "order": 6
+  },
+  {
+    "id": "ai",
+    "name": "AI 相关",
+    "group": "技术知识",
+    "description": "通用大模型、RAG、Agent 与端侧 AI：从机制到部署和质量证据",
+    "topics": [
+      "大模型 / RAG / Agent",
+      "端侧推理 / 量化",
+      "评测 / 系统设计"
+    ],
+    "icon": "Sparkles",
+    "order": 7
+  },
+  {
+    "id": "decisions",
+    "name": "技术决策",
+    "group": "资深能力",
+    "description": "从约束出发，比较方案并验证关键假设",
+    "topics": [
+      "选型依据",
+      "成本收益",
+      "决策记录"
+    ],
+    "icon": "GitBranch",
+    "order": 8
+  },
+  {
+    "id": "diagnosis",
+    "name": "复杂问题定位",
+    "group": "资深能力",
+    "description": "建立假设，用现场证据收敛到根因",
+    "topics": [
+      "ANR / OOM",
+      "等待链",
+      "故障复现"
+    ],
+    "icon": "ScanSearch",
+    "order": 9
+  },
+  {
+    "id": "performance",
+    "name": "性能治理",
+    "group": "资深能力",
+    "description": "从一次优化到可持续的质量机制",
+    "topics": [
+      "启动 / 卡顿",
+      "指标基线",
+      "回归门禁"
+    ],
+    "icon": "Gauge",
+    "order": 10
+  },
+  {
+    "id": "architecture",
+    "name": "架构演进",
+    "group": "资深能力",
+    "description": "设计边界，在真实约束中渐进迁移",
+    "topics": [
+      "模块化",
+      "离线同步",
+      "迁移与回滚"
+    ],
+    "icon": "Workflow",
+    "order": 11
+  },
+  {
+    "id": "evidence",
+    "name": "项目成果与证据",
+    "group": "资深能力",
+    "description": "说清个人贡献、决策过程与收益归因",
+    "topics": [
+      "代表项目",
+      "测量依据",
+      "复盘表达"
+    ],
+    "icon": "FolderCheck",
+    "order": 12
+  },
+  {
+    "id": "interviews",
+    "name": "面经逐题详解",
+    "group": "技术知识",
+    "description": "按真实面经顺序组织的跨领域问答集合，独立于知识分类",
+    "topics": [
+      "原帖映射",
+      "参考回答",
+      "原理追问"
+    ],
+    "icon": "FileText",
+    "order": 13,
+    "hidden": true
+  }
+]

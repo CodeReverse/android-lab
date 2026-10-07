@@ -1,0 +1,2780 @@
+[
+  {
+    "id": "binder",
+    "title": "Binder IPC：代理、线程池、同步等待与死亡恢复",
+    "category": "android",
+    "topic": "进程与 IPC",
+    "tags": [
+      "进程与 IPC",
+      "Binder IPC",
+      "代理、线程池、同步等待与死亡恢复"
+    ],
+    "summary": "从一次远程调用推导阻塞、重入、安全身份和大数据传输边界。",
+    "file": "lessons/binder.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "anr-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "Binder 架构",
+        "url": "https://source.android.com/docs/core/architecture/ipc/binder-overview"
+      },
+      {
+        "title": "AIDL 接口设计",
+        "url": "https://developer.android.com/develop/background-work/services/aidl"
+      },
+      {
+        "title": "TransactionTooLargeException",
+        "url": "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "小米安卓一二面 · 2025-10-27",
+        "url": "https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349",
+        "claim": "涉及 Binder 通信机制。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "state-restoration",
+    "title": "生命周期与状态恢复：旋转、返回栈和进程死亡",
+    "category": "android",
+    "topic": "生命周期与状态",
+    "tags": [
+      "生命周期与状态",
+      "生命周期与状态恢复",
+      "旋转、返回栈和进程死亡"
+    ],
+    "summary": "区分页面状态、业务数据和持久任务，避免只会背生命周期顺序。",
+    "file": "lessons/state-restoration.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "offline-data",
+      "compose-state"
+    ],
+    "sources": [
+      {
+        "title": "保存 UI 状态",
+        "url": "https://developer.android.com/topic/libraries/architecture/saving-states"
+      },
+      {
+        "title": "Fragment 的视图生命周期",
+        "url": "https://developer.android.com/guide/fragments/lifecycle"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及 Activity/Fragment 生命周期与通信；本文扩展到恢复正确性。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "view-rendering",
+    "title": "View 渲染：从 requestLayout 到屏幕上的一帧",
+    "category": "android",
+    "topic": "绘制与输入",
+    "tags": [
+      "绘制与输入",
+      "View 渲染",
+      "从 requestLayout 到屏幕上的一帧"
+    ],
+    "summary": "串起测量、布局、显示列表、RenderThread 与帧截止时间。",
+    "file": "lessons/view-rendering.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "performance-proof",
+      "compose-phases"
+    ],
+    "sources": [
+      {
+        "title": "View 自定义绘制",
+        "url": "https://developer.android.com/develop/ui/views/layout/custom-views/custom-drawing"
+      },
+      {
+        "title": "硬件加速模型",
+        "url": "https://developer.android.com/develop/ui/views/graphics/hardware-accel"
+      },
+      {
+        "title": "慢帧诊断",
+        "url": "https://developer.android.com/topic/performance/vitals/render"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "小米安卓一二面 · 2025-10-27",
+        "url": "https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349",
+        "claim": "涉及 View 绘制与渲染。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "dns-routing",
+    "title": "DNS 与连接建立：域名解析慢，应该查哪一层",
+    "category": "network",
+    "topic": "DNS 与连接",
+    "tags": [
+      "DNS 与连接",
+      "DNS 与连接建立",
+      "域名解析慢，应该查哪一层"
+    ],
+    "summary": "把解析、选路、建连分开计时，理解缓存失效和移动网络切换。",
+    "file": "lessons/dns-routing.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "tcp-tls",
+      "okhttp-chain"
+    ],
+    "sources": [
+      {
+        "title": "DNS 标准与缓存模型",
+        "url": "https://www.rfc-editor.org/rfc/rfc1034"
+      },
+      {
+        "title": "Happy Eyeballs v2",
+        "url": "https://www.rfc-editor.org/rfc/rfc8305"
+      },
+      {
+        "title": "OkHttp 事件观测",
+        "url": "https://square.github.io/okhttp/features/events/"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "tcp-tls",
+    "title": "TCP、TLS 与 HTTP/2/3：可靠传输不等于业务成功",
+    "category": "network",
+    "topic": "传输与安全",
+    "tags": [
+      "传输与安全",
+      "TCP、TLS 与 HTTP/2/3",
+      "可靠传输不等于业务成功"
+    ],
+    "summary": "从序号确认、握手认证到队头阻塞，回答协议机制及工程边界。",
+    "file": "lessons/tcp-tls.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "http-cache",
+      "network-reliability"
+    ],
+    "sources": [
+      {
+        "title": "TCP 标准 RFC 9293",
+        "url": "https://www.rfc-editor.org/rfc/rfc9293"
+      },
+      {
+        "title": "TLS 1.3 与重放边界",
+        "url": "https://www.rfc-editor.org/rfc/rfc8446"
+      },
+      {
+        "title": "HTTP/3",
+        "url": "https://www.rfc-editor.org/rfc/rfc9114"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及 TCP 可靠性、握手与关闭。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "http-cache",
+    "title": "HTTP 缓存：新鲜度、条件请求与账号隔离",
+    "category": "network",
+    "topic": "HTTP 与缓存",
+    "tags": [
+      "HTTP 与缓存",
+      "HTTP 缓存",
+      "新鲜度、条件请求与账号隔离"
+    ],
+    "summary": "解释 no-cache、no-store、ETag、Vary，并把协议缓存和业务缓存分开。",
+    "file": "lessons/http-cache.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "offline-data"
+    ],
+    "sources": [
+      {
+        "title": "HTTP 缓存规范",
+        "url": "https://www.rfc-editor.org/rfc/rfc9111"
+      },
+      {
+        "title": "HTTP 条件请求语义",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110"
+      },
+      {
+        "title": "OkHttp 缓存",
+        "url": "https://square.github.io/okhttp/features/caching/"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及 OkHttp 缓存策略。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "okhttp-chain",
+    "title": "OkHttp：拦截器、调度、连接池和取消的边界",
+    "category": "network",
+    "topic": "OkHttp 与请求链路",
+    "tags": [
+      "OkHttp 与请求链路",
+      "OkHttp",
+      "拦截器、调度、连接池和取消的边界"
+    ],
+    "summary": "以一次调用的时序解释五层职责，并定位排队、握手与响应读取耗时。",
+    "file": "lessons/okhttp-chain.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "network-reliability",
+      "coroutines"
+    ],
+    "sources": [
+      {
+        "title": "OkHttp 拦截器",
+        "url": "https://square.github.io/okhttp/features/interceptors/"
+      },
+      {
+        "title": "调用与连接",
+        "url": "https://square.github.io/okhttp/features/calls/"
+      },
+      {
+        "title": "事件观测",
+        "url": "https://square.github.io/okhttp/features/events/"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "明确涉及 OkHttp 拦截器、缓存与下载。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "network-reliability",
+    "title": "弱网可靠性：超时、重试、幂等与未知结果",
+    "category": "network",
+    "topic": "弱网与可靠性",
+    "tags": [
+      "弱网与可靠性",
+      "弱网可靠性",
+      "超时、重试、幂等与未知结果"
+    ],
+    "summary": "处理“服务端已成功，客户端没收到”的关键窗口，避免重复副作用。",
+    "file": "lessons/network-reliability.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "offline-data",
+      "ai-client"
+    ],
+    "sources": [
+      {
+        "title": "HTTP 方法与重试语义",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110"
+      },
+      {
+        "title": "离线优先数据层",
+        "url": "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "coroutines",
+    "title": "Kotlin 协程：状态机、结构化并发与取消传播",
+    "category": "languages",
+    "topic": "协程执行机制",
+    "tags": [
+      "协程执行机制",
+      "Kotlin 协程",
+      "状态机、结构化并发与取消传播"
+    ],
+    "summary": "从 suspend 的编译模型推导线程、Job、异常与资源释放，避免只背 API。",
+    "file": "lessons/coroutines.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "flow-state",
+      "jmm-concurrency",
+      "okhttp-chain"
+    ],
+    "sources": [
+      {
+        "title": "协程编译模型",
+        "url": "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+      },
+      {
+        "title": "取消与超时",
+        "url": "https://kotlinlang.org/docs/cancellation-and-timeouts.html"
+      },
+      {
+        "title": "异常传播",
+        "url": "https://kotlinlang.org/docs/exception-handling.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "flow-state",
+    "title": "Flow、StateFlow 与事件：生命周期、背压和丢失语义",
+    "category": "languages",
+    "topic": "Flow 与响应式状态",
+    "tags": [
+      "Flow 与响应式状态",
+      "Flow、StateFlow 与事件",
+      "生命周期、背压和丢失语义"
+    ],
+    "summary": "解释冷流、热流、合并、collectLatest，以及页面事件为什么可能丢失或重复。",
+    "file": "lessons/flow-state.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "coroutines",
+      "compose-state"
+    ],
+    "sources": [
+      {
+        "title": "StateFlow 契约",
+        "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+      },
+      {
+        "title": "SharedFlow 契约",
+        "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      },
+      {
+        "title": "生命周期协程",
+        "url": "https://developer.android.com/topic/libraries/architecture/coroutines"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "collections",
+    "title": "HashMap 与 Kotlin 集合：散列、扩容和不可变性的误区",
+    "category": "languages",
+    "topic": "集合与类型系统",
+    "tags": [
+      "集合与类型系统",
+      "HashMap 与 Kotlin 集合",
+      "散列、扩容和不可变性的误区"
+    ],
+    "summary": "把集合实现细节连接到键稳定性、线程安全和 UI 状态发布。",
+    "file": "lessons/collections.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "jmm-concurrency",
+      "compose-state"
+    ],
+    "sources": [
+      {
+        "title": "Kotlin 集合概览",
+        "url": "https://kotlinlang.org/docs/collections-overview.html"
+      },
+      {
+        "title": "HashMap API 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html"
+      },
+      {
+        "title": "Kotlin data class",
+        "url": "https://kotlinlang.org/docs/data-classes.html"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及 HashMap 实现、扩容与线程安全。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-state",
+    "title": "Compose State：remember 记住什么，谁让界面更新",
+    "category": "compose",
+    "topic": "状态与所有权",
+    "tags": [
+      "状态与所有权",
+      "Compose State",
+      "remember 记住什么，谁让界面更新"
+    ],
+    "summary": "从一个计数器拆开存储、可观察性、状态提升和恢复，连接底层读写订阅。",
+    "file": "lessons/compose-state.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "compose-snapshot",
+      "compose-slots",
+      "state-restoration"
+    ],
+    "sources": [
+      {
+        "title": "Compose 状态管理",
+        "url": "https://developer.android.com/develop/ui/compose/state"
+      },
+      {
+        "title": "SnapshotState 源码入口",
+        "url": "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
+      },
+      {
+        "title": "Compose 各阶段读取",
+        "url": "https://developer.android.com/develop/ui/compose/phases"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "MetaApp 一面 · 2026-07-01",
+        "url": "https://www.nowcoder.com/feed/main/detail/ffabbdfbab1a49c0a8a1c99b7d121535",
+        "claim": "原帖涉及 Compose 与 State；本文将状态问题展开成学习正文。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-snapshot",
+    "title": "Snapshot 原理：状态版本、读取观察与冲突合并",
+    "category": "compose",
+    "topic": "Runtime 与 Snapshot",
+    "tags": [
+      "Runtime 与 Snapshot",
+      "Snapshot 原理",
+      "状态版本、读取观察与冲突合并"
+    ],
+    "summary": "解释快照隔离、StateRecord、apply 和 mutation policy，区分数据一致性与 UI 调度。",
+    "file": "lessons/compose-snapshot.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "compose-state",
+      "compose-phases"
+    ],
+    "sources": [
+      {
+        "title": "Snapshot API",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot"
+      },
+      {
+        "title": "MutableSnapshot API",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/MutableSnapshot"
+      },
+      {
+        "title": "SnapshotMutationPolicy",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-slots",
+    "title": "组合树与 SlotTable：位置身份怎样保存 remember",
+    "category": "compose",
+    "topic": "Runtime 与组合结构",
+    "tags": [
+      "Runtime 与组合结构",
+      "组合树与 SlotTable",
+      "位置身份怎样保存 remember"
+    ],
+    "summary": "用插入、删除、移动的过程解释 group、slot、key 与 LayoutNode 的区别。",
+    "file": "lessons/compose-slots.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "compose-compiler",
+      "compose-effects"
+    ],
+    "sources": [
+      {
+        "title": "官方组合机制设计说明（经典实现，注意文内版本警告）",
+        "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/compose/runtime/design/how-compose-works.md"
+      },
+      {
+        "title": "可组合生命周期与 key",
+        "url": "https://developer.android.com/develop/ui/compose/lifecycle"
+      },
+      {
+        "title": "Runtime 版本变化",
+        "url": "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-compiler",
+    "title": "Compose 编译器：IR 变换、changed 标记与强跳过",
+    "category": "compose",
+    "topic": "编译器与稳定性",
+    "tags": [
+      "编译器与稳定性",
+      "Compose 编译器",
+      "IR 变换、changed 标记与强跳过"
+    ],
+    "summary": "回答 @Composable 到底改变了什么，区分稳定性契约和运行时状态订阅。",
+    "file": "lessons/compose-compiler.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "compose-slots",
+      "compose-phases",
+      "collections"
+    ],
+    "sources": [
+      {
+        "title": "强跳过模式与版本",
+        "url": "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+      },
+      {
+        "title": "稳定性契约",
+        "url": "https://developer.android.com/develop/ui/compose/performance/stability"
+      },
+      {
+        "title": "编译器迁移配置",
+        "url": "https://kotlinlang.org/docs/compose-compiler-migration-guide.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-phases",
+    "title": "Compose 如何刷新：组合、测量、放置与绘制失效",
+    "category": "compose",
+    "topic": "布局绘制与性能",
+    "tags": [
+      "布局绘制与性能",
+      "Compose 如何刷新",
+      "组合、测量、放置与绘制失效"
+    ],
+    "summary": "从读取位置解释为什么有些状态更新不需要重组，避免以重组次数代替性能。",
+    "file": "lessons/compose-phases.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "compose-snapshot",
+      "performance-proof"
+    ],
+    "sources": [
+      {
+        "title": "Compose phases",
+        "url": "https://developer.android.com/develop/ui/compose/phases"
+      },
+      {
+        "title": "Compose 性能最佳实践",
+        "url": "https://developer.android.com/develop/ui/compose/performance/bestpractices"
+      },
+      {
+        "title": "自定义布局",
+        "url": "https://developer.android.com/develop/ui/compose/layouts/custom"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-effects",
+    "title": "Compose 副作用与互操作：key、取消、清理与旧闭包",
+    "category": "compose",
+    "topic": "副作用与互操作",
+    "tags": [
+      "副作用与互操作",
+      "Compose 副作用与互操作",
+      "key、取消、清理与旧闭包"
+    ],
+    "summary": "解释 LaunchedEffect、DisposableEffect、rememberUpdatedState，并处理 View 与 Compose 混合生命周期。",
+    "file": "lessons/compose-effects.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "compose-state",
+      "state-restoration",
+      "coroutines"
+    ],
+    "sources": [
+      {
+        "title": "Compose effect 官方契约",
+        "url": "https://developer.android.com/develop/ui/compose/side-effects"
+      },
+      {
+        "title": "在 Compose 中使用 View",
+        "url": "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      },
+      {
+        "title": "在 View 中使用 Compose",
+        "url": "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "flutter-runtime",
+    "title": "Flutter：Widget、Element、RenderObject 与混合栈成本",
+    "category": "cross-platform",
+    "topic": "Flutter",
+    "tags": [
+      "Flutter",
+      "Flutter"
+    ],
+    "summary": "从三层对象和帧流水线，解释跨平台一致性、平台视图与原生接入取舍。",
+    "file": "lessons/flutter-runtime.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "cross-boundaries",
+      "cross-overview"
+    ],
+    "sources": [
+      {
+        "title": "Flutter 架构",
+        "url": "https://docs.flutter.dev/resources/architectural-overview"
+      },
+      {
+        "title": "平台通道",
+        "url": "https://docs.flutter.dev/platform-integration/platform-channels"
+      },
+      {
+        "title": "原生应用集成",
+        "url": "https://docs.flutter.dev/add-to-app"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "根据简历追问为何选择 Flutter；本文补充选型所需的机制知识。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "rn-architecture",
+    "title": "React Native：从旧 Bridge 到 JSI、Fabric 与 TurboModules",
+    "category": "cross-platform",
+    "topic": "React Native",
+    "tags": [
+      "React Native",
+      "React Native"
+    ],
+    "summary": "区分 JS 执行、原生模块与渲染体系，避免用旧 Bridge 概括所有版本。",
+    "file": "lessons/rn-architecture.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "cross-boundaries",
+      "flutter-runtime",
+      "technology-decisions"
+    ],
+    "sources": [
+      {
+        "title": "RN 新架构概览",
+        "url": "https://reactnative.dev/architecture/landing-page"
+      },
+      {
+        "title": "Fabric 渲染流水线",
+        "url": "https://reactnative.dev/architecture/render-pipeline"
+      },
+      {
+        "title": "原生模块介绍",
+        "url": "https://reactnative.dev/docs/turbo-native-modules-introduction"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "kmp-boundaries",
+    "title": "KMP 与 Compose Multiplatform：共享逻辑还是共享界面",
+    "category": "cross-platform",
+    "topic": "KMP 与 CMP",
+    "tags": [
+      "KMP 与 CMP",
+      "共享逻辑还是共享界面"
+    ],
+    "summary": "从源集和平台接口到 iOS 集成，解释复用收益与迁移成本来自哪里。",
+    "file": "lessons/kmp-boundaries.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "cross-overview",
+      "architecture-evolution"
+    ],
+    "sources": [
+      {
+        "title": "KMP 官方概览",
+        "url": "https://kotlinlang.org/docs/multiplatform/kmp-overview.html"
+      },
+      {
+        "title": "expect/actual",
+        "url": "https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html"
+      },
+      {
+        "title": "Kotlin/Native 内存管理",
+        "url": "https://kotlinlang.org/docs/native-memory-manager.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "cross-boundaries",
+    "title": "JSBridge 与跨端协议：权限、版本、线程和生命周期",
+    "category": "cross-platform",
+    "topic": "JSBridge 与边界协议",
+    "tags": [
+      "JSBridge 与边界协议",
+      "JSBridge 与跨端协议",
+      "权限、版本、线程和生命周期"
+    ],
+    "summary": "把 Bridge 当成可版本化的能力接口，解决过期回调、越权和兼容问题。",
+    "file": "lessons/cross-boundaries.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "technology-decisions",
+      "network-reliability"
+    ],
+    "sources": [
+      {
+        "title": "WebView Bridge 风险与来源",
+        "url": "https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges"
+      },
+      {
+        "title": "WebView 与 JavaScript",
+        "url": "https://developer.android.com/develop/ui/views/layout/webapps/webview"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "anr-diagnosis",
+    "title": "ANR 定位：从主线程栈走到完整等待链",
+    "category": "diagnosis",
+    "topic": "ANR 与等待链",
+    "tags": [
+      "ANR 与等待链",
+      "ANR 定位",
+      "从主线程栈走到完整等待链"
+    ],
+    "summary": "先确认超时类型，再用线程调度、锁拥有者和 Binder 对端收敛根因。",
+    "file": "lessons/anr-diagnosis.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "handler",
+      "binder",
+      "performance-proof"
+    ],
+    "sources": [
+      {
+        "title": "ANR 分类与排查",
+        "url": "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      },
+      {
+        "title": "Android 系统 trace",
+        "url": "https://developer.android.com/topic/performance/tracing"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "performance-proof",
+    "title": "性能优化证据：从一次跑分到可复现的收益归因",
+    "category": "performance",
+    "topic": "指标与实验设计",
+    "tags": [
+      "指标与实验设计",
+      "性能优化证据",
+      "从一次跑分到可复现的收益归因"
+    ],
+    "summary": "定义口径、控制变量、分析分位数，避免把设备差异和人群变化当作优化成果。",
+    "file": "lessons/performance-proof.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "startup-governance",
+      "project-evidence"
+    ],
+    "sources": [
+      {
+        "title": "Macrobenchmark 测量与 trace",
+        "url": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      },
+      {
+        "title": "启动时间定义",
+        "url": "https://developer.android.com/topic/performance/vitals/launch-time"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "startup-governance",
+    "title": "启动治理：关键路径、初始化 DAG 与 Profile 优化",
+    "category": "performance",
+    "topic": "启动与持续治理",
+    "tags": [
+      "启动与持续治理",
+      "启动治理"
+    ],
+    "summary": "把初始化并行、延迟加载和 Baseline Profile 放进同一可测量的系统。",
+    "file": "lessons/startup-governance.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "performance-proof",
+      "architecture-evolution"
+    ],
+    "sources": [
+      {
+        "title": "启动性能",
+        "url": "https://developer.android.com/topic/performance/vitals/launch-time"
+      },
+      {
+        "title": "Baseline Profiles",
+        "url": "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      },
+      {
+        "title": "Startup Profiles",
+        "url": "https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "technology-decisions",
+    "title": "技术决策：如何比较方案，并为不确定性设计退出路径",
+    "category": "decisions",
+    "topic": "选型与 ADR",
+    "tags": [
+      "选型与 ADR",
+      "技术决策",
+      "如何比较方案，并为不确定性设计退出路径"
+    ],
+    "summary": "用真实约束、验证实验、总代价与退出机制回答“为什么选它”。",
+    "file": "lessons/technology-decisions.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 2,
+    "related": [
+      "cross-overview",
+      "architecture-evolution",
+      "project-evidence"
+    ],
+    "sources": [
+      {
+        "title": "KMP 的共享范围",
+        "url": "https://kotlinlang.org/docs/multiplatform/kmp-overview.html"
+      },
+      {
+        "title": "Android 模块化取舍",
+        "url": "https://developer.android.com/topic/modularization"
+      }
+    ],
+    "evidence": []
+  },
+  {
+    "id": "architecture-evolution",
+    "title": "架构演进：模块边界、单向数据流与渐进替换",
+    "category": "architecture",
+    "topic": "模块化与迁移",
+    "tags": [
+      "模块化与迁移",
+      "架构演进",
+      "模块边界、单向数据流与渐进替换"
+    ],
+    "summary": "从依赖图和状态所有权出发，解释如何在持续交付中改造存量 App。",
+    "file": "lessons/architecture-evolution.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "offline-data",
+      "testing-strategy",
+      "technology-decisions"
+    ],
+    "sources": [
+      {
+        "title": "Android 架构建议",
+        "url": "https://developer.android.com/topic/architecture/recommendations"
+      },
+      {
+        "title": "模块化指南",
+        "url": "https://developer.android.com/topic/modularization"
+      },
+      {
+        "title": "Room 数据库迁移",
+        "url": "https://developer.android.com/training/data-storage/room/migrating-db-versions"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "offline-data",
+    "title": "离线数据架构：单一读源、Outbox、冲突与恢复",
+    "category": "architecture",
+    "topic": "数据一致性与同步",
+    "tags": [
+      "数据一致性与同步",
+      "离线数据架构",
+      "单一读源、Outbox、冲突与恢复"
+    ],
+    "summary": "把缓存升级成明确的一致性模型，处理重启、重复提交与多端冲突。",
+    "file": "lessons/offline-data.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "network-reliability",
+      "http-cache",
+      "state-restoration"
+    ],
+    "sources": [
+      {
+        "title": "离线优先数据层",
+        "url": "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      },
+      {
+        "title": "持久后台工作",
+        "url": "https://developer.android.com/develop/background-work/background-tasks/persistent-work"
+      },
+      {
+        "title": "Room 事务 API",
+        "url": "https://developer.android.com/reference/androidx/room/Transaction"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "project-evidence",
+    "title": "项目成果表达：把技术选择、个人贡献与证据连成一条线",
+    "category": "evidence",
+    "topic": "项目复盘与成果归因",
+    "tags": [
+      "项目复盘与成果归因",
+      "项目成果表达",
+      "把技术选择、个人贡献与证据连成一条线"
+    ],
+    "summary": "准备能经受反问的项目材料，而不是一份堆满框架和百分比的背稿。",
+    "file": "lessons/project-evidence.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 2,
+    "related": [
+      "performance-proof",
+      "technology-decisions",
+      "anr-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "性能结果的测量基础",
+        "url": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      }
+    ],
+    "evidence": []
+  },
+  {
+    "id": "testing-strategy",
+    "title": "资深 Android 测试策略：状态机、契约与关键用户旅程",
+    "category": "architecture",
+    "topic": "测试与质量工程",
+    "tags": [
+      "测试与质量工程",
+      "资深 Android 测试策略",
+      "状态机、契约与关键用户旅程"
+    ],
+    "summary": "按失败成本选择测试边界，用少量高价值用例保护迁移与并发行为。",
+    "file": "lessons/testing-strategy.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "offline-data",
+      "architecture-evolution",
+      "build-release"
+    ],
+    "sources": [
+      {
+        "title": "Android 测试基础",
+        "url": "https://developer.android.com/training/testing/fundamentals"
+      },
+      {
+        "title": "Compose 测试",
+        "url": "https://developer.android.com/develop/ui/compose/testing"
+      },
+      {
+        "title": "协程测试工具",
+        "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "build-release",
+    "title": "构建与发布工程：Gradle、R8、兼容性与灰度回滚",
+    "category": "android",
+    "topic": "构建与发布",
+    "tags": [
+      "构建与发布",
+      "构建与发布工程",
+      "Gradle、R8、兼容性与灰度回滚"
+    ],
+    "summary": "把“本地能运行”扩展到可重复构建、可诊断发布和可控制风险。",
+    "file": "lessons/build-release.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "testing-strategy",
+      "architecture-evolution"
+    ],
+    "sources": [
+      {
+        "title": "优化构建速度",
+        "url": "https://developer.android.com/build/optimize-your-build"
+      },
+      {
+        "title": "R8 优化与保留规则",
+        "url": "https://developer.android.com/build/shrink-code"
+      },
+      {
+        "title": "Gradle 配置缓存",
+        "url": "https://docs.gradle.org/current/userguide/configuration_cache.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-client",
+    "title": "AI 客户端工程：流式协议、取消、重连与工具执行",
+    "category": "ai",
+    "topic": "多模态与实时交互",
+    "tags": [
+      "AI 应用可靠性",
+      "AI 客户端工程",
+      "流式协议、取消、重连与工具执行"
+    ],
+    "summary": "把聊天 UI 视为有状态协议客户端，处理半截输出、重复事件和权限边界。",
+    "file": "lessons/ai-client.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 4,
+    "related": [
+      "ai-agent-runtime",
+      "ai-tools-context",
+      "ai-multimodal",
+      "ai-edge-architecture"
+    ],
+    "sources": [
+      {
+        "title": "SSE 协议标准",
+        "url": "https://html.spec.whatwg.org/multipage/server-sent-events.html"
+      },
+      {
+        "title": "Android 端侧 LiteRT",
+        "url": "https://developers.google.com/edge/litert/android"
+      },
+      {
+        "title": "Android 安全原则",
+        "url": "https://developer.android.com/privacy-and-security/security-tips"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-evaluation",
+    "title": "RAG 与 AI 辅助开发：检索、证据、评测和失效边界",
+    "category": "ai",
+    "topic": "RAG 与检索",
+    "tags": [
+      "检索与质量评测",
+      "RAG 与 AI 辅助开发",
+      "检索、证据、评测和失效边界"
+    ],
+    "summary": "区分模型回答能力与工程可交付性，构建可以回归验证的任务集合。",
+    "file": "lessons/ai-evaluation.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 4,
+    "related": [
+      "ai-rag-pipeline",
+      "ai-retrieval",
+      "ai-quality",
+      "ai-coding"
+    ],
+    "sources": [
+      {
+        "title": "RAG 原始研究",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Android 测试原则",
+        "url": "https://developer.android.com/training/testing/fundamentals"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "android-security",
+    "title": "Android 安全边界：组件暴露、凭据、链接与数据归属",
+    "category": "android",
+    "topic": "安全与隐私",
+    "tags": [
+      "安全与隐私",
+      "Android 安全边界",
+      "组件暴露、凭据、链接与数据归属"
+    ],
+    "summary": "从入口到敏感能力建立权限链，避免把客户端校验当作最终授权。",
+    "file": "lessons/android-security.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "cross-boundaries",
+      "build-release",
+      "offline-data"
+    ],
+    "sources": [
+      {
+        "title": "Android 安全建议",
+        "url": "https://developer.android.com/privacy-and-security/security-tips"
+      },
+      {
+        "title": "不安全 Deep Link",
+        "url": "https://developer.android.com/privacy-and-security/risks/unsafe-use-of-deeplinks"
+      },
+      {
+        "title": "Android Keystore",
+        "url": "https://developer.android.com/privacy-and-security/keystore"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "senior-capability-map",
+    "title": "资深 Android 能力地图：从机制到系统责任",
+    "category": "decisions",
+    "topic": "能力地图与学习选择",
+    "tags": [
+      "能力地图与学习选择",
+      "资深 Android 能力地图",
+      "从机制到系统责任"
+    ],
+    "summary": "用岗位责任补足面经盲区，并按已有经验选择阅读起点。",
+    "file": "lessons/senior-capability-map.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 2,
+    "related": [
+      "project-evidence",
+      "compose-state",
+      "technology-decisions"
+    ],
+    "sources": [
+      {
+        "title": "Android 架构建议与适用性",
+        "url": "https://developer.android.com/topic/architecture/recommendations"
+      },
+      {
+        "title": "Android 质量指导",
+        "url": "https://developer.android.com/docs/quality-guidelines/core-app-quality"
+      }
+    ],
+    "evidence": []
+  },
+  {
+    "id": "interview-meituan-2025",
+    "title": "美团面经逐题详解：生命周期、HashMap、OkHttp 与 TCP",
+    "category": "interviews",
+    "topic": "美团",
+    "tags": [
+      "美团",
+      "美团面经逐题详解"
+    ],
+    "summary": "20 个原帖条目逐题展开：参考回答、原理边界、资深追问和知识正文。",
+    "file": "lessons/interview-meituan-2025.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "Activity 生命周期",
+        "url": "https://developer.android.com/guide/components/activities/activity-lifecycle"
+      },
+      {
+        "title": "Fragment 通信",
+        "url": "https://developer.android.com/guide/fragments/communicate"
+      },
+      {
+        "title": "HashMap 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html"
+      },
+      {
+        "title": "HTTP 语义",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110"
+      },
+      {
+        "title": "OkHttp 拦截器",
+        "url": "https://square.github.io/okhttp/features/interceptors/"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "本页按原帖题序逐项对应，所有新增追问均为编辑扩展。"
+      }
+    ],
+    "company": "美团",
+    "interviewDate": "2025-02-17",
+    "role": "Android 日常实习一面",
+    "questionCount": 20
+  },
+  {
+    "id": "interview-metaapp-2026",
+    "title": "MetaApp 面经逐题详解：数据流、MMKV 与 Compose",
+    "category": "interviews",
+    "topic": "MetaApp",
+    "tags": [
+      "MetaApp",
+      "MetaApp 面经逐题详解",
+      "数据流、MMKV 与 Compose"
+    ],
+    "summary": "6 个原帖条目逐题展开：参考回答、原理边界、资深追问和知识正文。",
+    "file": "lessons/interview-metaapp-2026.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "MMKV 设计（历史机制说明，版本行为须另核对）",
+        "url": "https://github.com/Tencent/MMKV/wiki/design"
+      },
+      {
+        "title": "SharedPreferences API",
+        "url": "https://developer.android.com/reference/android/content/SharedPreferences"
+      },
+      {
+        "title": "DataStore",
+        "url": "https://developer.android.com/topic/libraries/architecture/datastore"
+      },
+      {
+        "title": "Compose phases",
+        "url": "https://developer.android.com/develop/ui/compose/phases"
+      },
+      {
+        "title": "强跳过",
+        "url": "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "MetaApp原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/ffabbdfbab1a49c0a8a1c99b7d121535",
+        "claim": "本页按原帖题序逐项对应，所有新增追问均为编辑扩展。"
+      }
+    ],
+    "company": "MetaApp",
+    "interviewDate": "2026-07-01",
+    "role": "Android 一面；原帖未注明职级",
+    "questionCount": 6
+  },
+  {
+    "id": "interview-xiaomi-2025",
+    "title": "小米面经逐题详解：线程池、渲染、Binder 与并发",
+    "category": "interviews",
+    "topic": "小米",
+    "tags": [
+      "小米",
+      "小米面经逐题详解",
+      "线程池、渲染、Binder 与并发"
+    ],
+    "summary": "23 个原帖条目逐题展开：参考回答、原理边界、资深追问和知识正文。",
+    "file": "lessons/interview-xiaomi-2025.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "Activity / onNewIntent",
+        "url": "https://developer.android.com/reference/android/app/Activity"
+      },
+      {
+        "title": "ThreadPoolExecutor",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ThreadPoolExecutor.html"
+      },
+      {
+        "title": "Glide 缓存",
+        "url": "https://bumptech.github.io/glide/doc/caching.html"
+      },
+      {
+        "title": "Linux pipe",
+        "url": "https://man7.org/linux/man-pages/man7/pipe.7.html"
+      },
+      {
+        "title": "Binder 架构",
+        "url": "https://source.android.com/docs/core/architecture/ipc/binder-overview"
+      },
+      {
+        "title": "JLS 内存模型",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "小米原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349",
+        "claim": "本页按原帖题序逐项对应，所有新增追问均为编辑扩展。"
+      }
+    ],
+    "company": "小米",
+    "interviewDate": "2025-10-27",
+    "role": "云服务 Android 秋招一、二面",
+    "questionCount": 23
+  },
+  {
+    "id": "ai-transformer",
+    "title": "大模型基础：Token、Attention、RoPE 与生成过程",
+    "category": "ai",
+    "topic": "模型基础与训练",
+    "tags": [
+      "模型基础与训练",
+      "大模型基础"
+    ],
+    "summary": "从张量形状推导一次生成，区分训练并行、推理串行、位置编码与幻觉。",
+    "file": "lessons/ai-transformer.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-inference",
+      "ai-training"
+    ],
+    "sources": [
+      {
+        "title": "Transformer 原论文",
+        "url": "https://arxiv.org/abs/1706.03762"
+      },
+      {
+        "title": "RoFormer / RoPE 原论文",
+        "url": "https://arxiv.org/abs/2104.09864"
+      },
+      {
+        "title": "GQA 原论文",
+        "url": "https://arxiv.org/abs/2305.13245"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-training",
+    "title": "训练与适配：SFT、LoRA、QLoRA、DPO 和 GRPO 怎么选",
+    "category": "ai",
+    "topic": "模型基础与训练",
+    "tags": [
+      "模型基础与训练",
+      "训练与适配"
+    ],
+    "summary": "把知识更新、行为适配和偏好优化分开，解释低秩训练与偏好目标的机制。",
+    "file": "lessons/ai-training.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-quality",
+      "ai-rag-pipeline",
+      "ai-quantization"
+    ],
+    "sources": [
+      {
+        "title": "LoRA 原论文",
+        "url": "https://arxiv.org/abs/2106.09685"
+      },
+      {
+        "title": "QLoRA 原论文",
+        "url": "https://arxiv.org/abs/2305.14314"
+      },
+      {
+        "title": "DPO 原论文",
+        "url": "https://arxiv.org/abs/2305.18290"
+      },
+      {
+        "title": "DeepSeekMath / GRPO 原论文",
+        "url": "https://arxiv.org/abs/2402.03300"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-inference",
+    "title": "推理原理：Prefill、Decode、KV Cache 与显存估算",
+    "category": "ai",
+    "topic": "推理与服务",
+    "tags": [
+      "推理与服务",
+      "推理原理"
+    ],
+    "summary": "用张量与数字算清 KV 内存，区分 GQA、FlashAttention、分页缓存各自解决的问题。",
+    "file": "lessons/ai-inference.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-serving",
+      "ai-edge-performance",
+      "ai-quantization"
+    ],
+    "sources": [
+      {
+        "title": "Transformers KV Cache 官方文档",
+        "url": "https://huggingface.co/docs/transformers/main/en/kv_cache"
+      },
+      {
+        "title": "GQA 原论文",
+        "url": "https://arxiv.org/abs/2305.13245"
+      },
+      {
+        "title": "FlashAttention 原论文",
+        "url": "https://arxiv.org/abs/2205.14135"
+      },
+      {
+        "title": "PagedAttention 原论文",
+        "url": "https://arxiv.org/abs/2309.06180"
+      },
+      {
+        "title": "vLLM 0.8.4 Prefix Caching 设计",
+        "url": "https://docs.vllm.ai/en/v0.8.4/design/automatic_prefix_caching.html"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节校招 AI infra 后端面经",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "原帖第 2、4、5、6 项涉及推理、KV 和前缀缓存。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-serving",
+    "title": "AI 服务系统：连续批处理、投机解码、排队与成本",
+    "category": "ai",
+    "topic": "推理与服务",
+    "tags": [
+      "推理与服务",
+      "AI 服务系统",
+      "连续批处理、投机解码、排队与成本"
+    ],
+    "summary": "把速度问题分解为排队、计算、内存和生成长度，设计满足 SLO 的服务。",
+    "file": "lessons/ai-serving.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-inference",
+      "ai-quality",
+      "ai-client"
+    ],
+    "sources": [
+      {
+        "title": "PagedAttention 原论文",
+        "url": "https://arxiv.org/abs/2309.06180"
+      },
+      {
+        "title": "Speculative Decoding 原论文",
+        "url": "https://arxiv.org/abs/2211.17192"
+      },
+      {
+        "title": "vLLM 0.8.4 Prefix Caching 设计",
+        "url": "https://docs.vllm.ai/en/v0.8.4/design/automatic_prefix_caching.html"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节校招 AI infra 后端面经",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "原帖第 2 项询问推理加速；本篇调度与容量设计属于资深扩展。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-rag-pipeline",
+    "title": "RAG 全链路：文档解析、Chunk、权限、引用与失效定位",
+    "category": "ai",
+    "topic": "RAG 与检索",
+    "tags": [
+      "RAG 与检索",
+      "RAG 全链路",
+      "文档解析、Chunk、权限、引用与失效定位"
+    ],
+    "summary": "从文档入库到带证据回答，解释分块策略与召回、生成之间的故障分界。",
+    "file": "lessons/ai-rag-pipeline.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-retrieval",
+      "ai-quality",
+      "ai-evaluation"
+    ],
+    "sources": [
+      {
+        "title": "RAG 原论文",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Elasticsearch RRF 官方文档",
+        "url": "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion"
+      },
+      {
+        "title": "HNSW 原论文",
+        "url": "https://arxiv.org/abs/1603.09320"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "原帖第 4–6 项涉及 RAG 流程、召回与分块。"
+      },
+      {
+        "title": "腾讯 AI 平台部一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+        "claim": "原帖询问 RAG 数据存储。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-retrieval",
+    "title": "检索底层：BM25、向量、HNSW、RRF 与 Reranker",
+    "category": "ai",
+    "topic": "RAG 与检索",
+    "tags": [
+      "RAG 与检索",
+      "检索底层"
+    ],
+    "summary": "区分词项匹配、语义近邻、近似索引与联合排序，解释召回失败的代价。",
+    "file": "lessons/ai-retrieval.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-rag-pipeline",
+      "ai-quality"
+    ],
+    "sources": [
+      {
+        "title": "HNSW 原论文",
+        "url": "https://arxiv.org/abs/1603.09320"
+      },
+      {
+        "title": "Elasticsearch RRF 官方文档",
+        "url": "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion"
+      },
+      {
+        "title": "RAG 原论文",
+        "url": "https://arxiv.org/abs/2005.11401"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "原帖第 5 项涉及混合检索和重排。"
+      },
+      {
+        "title": "腾讯 AI 平台部一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+        "claim": "原帖涉及检索存储与 ES/MySQL 的差别。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-agent-runtime",
+    "title": "Agent 运行机制：工作流、ReAct、状态机与多 Agent",
+    "category": "ai",
+    "topic": "Agent 与工具系统",
+    "tags": [
+      "Agent 与工具系统",
+      "Agent 运行机制",
+      "工作流、ReAct、状态机与多 Agent"
+    ],
+    "summary": "从一次工具调用到可恢复的任务循环，回答终止、重试、检查点与多 Agent 分工。",
+    "file": "lessons/ai-agent-runtime.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-tools-context",
+      "ai-quality",
+      "network-reliability"
+    ],
+    "sources": [
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      },
+      {
+        "title": "Anthropic：多 Agent 系统工程实践",
+        "url": "https://www.anthropic.com/engineering/multi-agent-research-system"
+      },
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "腾讯 AI 平台部一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+        "claim": "原帖涉及 Agent/工作流及 ReAct 的比较。"
+      },
+      {
+        "title": "字节校招 AI infra 后端面经",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "原帖第 7 项询问 Agent 模块。"
+      },
+      {
+        "title": "千问 AI 研发一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+        "claim": "原帖第 1–4、8 项涉及工作流、循环、图编排与重试。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-tools-context",
+    "title": "工具与上下文：Function Calling、MCP、Skill、Memory 与 Harness",
+    "category": "ai",
+    "topic": "Agent 与工具系统",
+    "tags": [
+      "Agent 与工具系统",
+      "工具与上下文"
+    ],
+    "summary": "厘清易混概念，把工具发现、执行权限、上下文与持久状态分层设计。",
+    "file": "lessons/ai-tools-context.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-agent-runtime",
+      "ai-rag-pipeline",
+      "ai-coding"
+    ],
+    "sources": [
+      {
+        "title": "MCP 2025-11-25 架构规范（固定版本）",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/architecture"
+      },
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      },
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "原帖第 12–13 项涉及 Function Calling 与 RAG。"
+      },
+      {
+        "title": "千问 AI 研发一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+        "claim": "原帖第 5–10 项涉及工具参数、错误、Skill 与 Harness。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-quality",
+    "title": "AI 质量工程：评测集、幻觉、LLM Judge、线上实验与安全",
+    "category": "ai",
+    "topic": "评测与工程治理",
+    "tags": [
+      "评测与工程治理",
+      "AI 质量工程",
+      "评测集、幻觉、LLM Judge、线上实验与安全"
+    ],
+    "summary": "从任务成功定义到分层指标、错误归因和发布门禁，避免自测自评的假提升。",
+    "file": "lessons/ai-quality.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-evaluation",
+      "ai-coding",
+      "ai-edge-performance"
+    ],
+    "sources": [
+      {
+        "title": "LLM-as-a-Judge / MT-Bench 研究",
+        "url": "https://arxiv.org/abs/2306.05685"
+      },
+      {
+        "title": "RAG 原论文",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "原帖第 17 项询问如何验证 AI 代码审查正确性。"
+      },
+      {
+        "title": "千问 AI 研发一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+        "claim": "原帖第 9 项涉及 Skill 的效果评测。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-coding",
+    "title": "AI Coding 与代码审查：上下文、验证器、沙箱和结果证据",
+    "category": "ai",
+    "topic": "评测与工程治理",
+    "tags": [
+      "评测与工程治理",
+      "AI Coding 与代码审查",
+      "上下文、验证器、沙箱和结果证据"
+    ],
+    "summary": "回答如何信任 AI 写的代码、如何评测审查质量，以及资深工程师承担什么责任。",
+    "file": "lessons/ai-coding.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-quality",
+      "ai-tools-context",
+      "testing-strategy"
+    ],
+    "sources": [
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      },
+      {
+        "title": "LLM-as-a-Judge / MT-Bench 研究",
+        "url": "https://arxiv.org/abs/2306.05685"
+      },
+      {
+        "title": "MCP 2025-11-25 架构规范（固定版本）",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/architecture"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "原帖第 16–18 项涉及 AI 时代判断、代码审查与 AI Coding 问题。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-edge-architecture",
+    "title": "端侧 AI 架构：哪些任务留在设备，怎样设计端云协同",
+    "category": "ai",
+    "topic": "端侧架构与部署",
+    "tags": [
+      "端侧架构与部署",
+      "端侧 AI 架构",
+      "哪些任务留在设备，怎样设计端云协同"
+    ],
+    "summary": "面向手机、PC 与边缘设备，按质量、时延、隐私、资源与维护成本做决策。",
+    "file": "lessons/ai-edge-architecture.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-edge-runtime",
+      "ai-edge-performance",
+      "ai-multimodal",
+      "ai-client"
+    ],
+    "sources": [
+      {
+        "title": "Google LiteRT 官方入口",
+        "url": "https://developers.google.com/edge/litert"
+      },
+      {
+        "title": "ONNX Runtime 移动端部署",
+        "url": "https://onnxruntime.ai/docs/tutorials/mobile/"
+      },
+      {
+        "title": "ExecuTorch 执行与编译机制",
+        "url": "https://docs.pytorch.org/executorch/stable/intro-how-it-works.html"
+      },
+      {
+        "title": "阿里巴巴 MNN 官方仓库",
+        "url": "https://github.com/alibaba/MNN"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-edge-runtime",
+    "title": "端侧推理引擎：LiteRT、ONNX Runtime、ExecuTorch、MNN、ncnn 与 llama.cpp",
+    "category": "ai",
+    "topic": "端侧架构与部署",
+    "tags": [
+      "端侧架构与部署",
+      "端侧推理引擎"
+    ],
+    "summary": "从模型导出、图优化、算子分区到 CPU/GPU/NPU 回退，建立可复用的选型表。",
+    "file": "lessons/ai-edge-runtime.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-edge-architecture",
+      "ai-quantization",
+      "ai-edge-performance"
+    ],
+    "sources": [
+      {
+        "title": "Google LiteRT 官方入口",
+        "url": "https://developers.google.com/edge/litert"
+      },
+      {
+        "title": "ONNX Runtime 移动端部署",
+        "url": "https://onnxruntime.ai/docs/tutorials/mobile/"
+      },
+      {
+        "title": "ExecuTorch 执行与编译机制",
+        "url": "https://docs.pytorch.org/executorch/stable/intro-how-it-works.html"
+      },
+      {
+        "title": "阿里巴巴 MNN 官方仓库",
+        "url": "https://github.com/alibaba/MNN"
+      },
+      {
+        "title": "腾讯 ncnn 官方仓库",
+        "url": "https://github.com/Tencent/ncnn"
+      },
+      {
+        "title": "llama.cpp 官方仓库",
+        "url": "https://github.com/ggml-org/llama.cpp"
+      },
+      {
+        "title": "ONNX Runtime QNN Execution Provider",
+        "url": "https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-quantization",
+    "title": "模型压缩与量化：INT8/INT4、PTQ/QAT、AWQ/GPTQ 与 KV 精度",
+    "category": "ai",
+    "topic": "量化与性能治理",
+    "tags": [
+      "量化与性能治理",
+      "模型压缩与量化"
+    ],
+    "summary": "推导 scale 和 zero point，解释权重、激活、KV 量化的收益及误差来源。",
+    "file": "lessons/ai-quantization.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "ai-inference",
+      "ai-edge-runtime",
+      "ai-edge-performance"
+    ],
+    "sources": [
+      {
+        "title": "ONNX Runtime 量化机制",
+        "url": "https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html"
+      },
+      {
+        "title": "AWQ 原论文",
+        "url": "https://arxiv.org/abs/2306.00978"
+      },
+      {
+        "title": "GPTQ 原论文",
+        "url": "https://arxiv.org/abs/2210.17323"
+      },
+      {
+        "title": "Transformers KV Cache 官方文档",
+        "url": "https://huggingface.co/docs/transformers/main/en/kv_cache"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节校招 AI infra 后端面经",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "原帖第 3–4 项分别询问压缩量化与权重、激活、KV 的收益。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-edge-performance",
+    "title": "端侧性能治理：内存、带宽、温升、Benchmark 与模型发布",
+    "category": "ai",
+    "topic": "量化与性能治理",
+    "tags": [
+      "量化与性能治理",
+      "端侧性能治理",
+      "内存、带宽、温升、Benchmark 与模型发布"
+    ],
+    "summary": "解释首轮很快但持续变慢、内存峰值与模型热更新失败的系统原因。",
+    "file": "lessons/ai-edge-performance.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-edge-architecture",
+      "ai-inference",
+      "ai-quantization",
+      "performance-proof"
+    ],
+    "sources": [
+      {
+        "title": "ExecuTorch 执行与编译机制",
+        "url": "https://docs.pytorch.org/executorch/stable/intro-how-it-works.html"
+      },
+      {
+        "title": "ONNX Runtime 移动端部署",
+        "url": "https://onnxruntime.ai/docs/tutorials/mobile/"
+      },
+      {
+        "title": "ONNX Runtime QNN Execution Provider",
+        "url": "https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html"
+      },
+      {
+        "title": "Transformers KV Cache 官方文档",
+        "url": "https://huggingface.co/docs/transformers/main/en/kv_cache"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-multimodal",
+    "title": "端侧多模态：语音、OCR、视觉语言模型与实时流水线",
+    "category": "ai",
+    "topic": "多模态与实时交互",
+    "tags": [
+      "多模态与实时交互",
+      "端侧多模态",
+      "语音、OCR、视觉语言模型与实时流水线"
+    ],
+    "summary": "把输入模态转化成可控流水线，设计背压、打断、时序和质量验证。",
+    "file": "lessons/ai-multimodal.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "ai-edge-architecture",
+      "ai-edge-performance",
+      "ai-client"
+    ],
+    "sources": [
+      {
+        "title": "Whisper 原论文",
+        "url": "https://arxiv.org/abs/2212.04356"
+      },
+      {
+        "title": "Google LiteRT 官方入口",
+        "url": "https://developers.google.com/edge/litert"
+      },
+      {
+        "title": "ExecuTorch 执行与编译机制",
+        "url": "https://docs.pytorch.org/executorch/stable/intro-how-it-works.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "interview-ai-infra-byte",
+    "title": "字节 AI Infra：推理与量化 6 问详解（AI 节选）",
+    "category": "interviews",
+    "topic": "字节跳动",
+    "tags": [
+      "字节跳动",
+      "字节 AI Infra",
+      "推理与量化 6 问详解（AI 节选）"
+    ],
+    "summary": "AI 专项节选 6 项（原帖 第 2–7 项），每题含原创参考答案、机制与编辑追问；不声称覆盖原帖全部条目。",
+    "file": "lessons/interview-ai-infra-byte.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "PagedAttention 原论文",
+        "url": "https://arxiv.org/abs/2309.06180"
+      },
+      {
+        "title": "FlashAttention 原论文",
+        "url": "https://arxiv.org/abs/2205.14135"
+      },
+      {
+        "title": "vLLM 0.8.4 Prefix Caching 设计",
+        "url": "https://docs.vllm.ai/en/v0.8.4/design/automatic_prefix_caching.html"
+      },
+      {
+        "title": "ONNX Runtime 量化机制",
+        "url": "https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html"
+      },
+      {
+        "title": "Transformers KV Cache 官方文档",
+        "url": "https://huggingface.co/docs/transformers/main/en/kv_cache"
+      },
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "只对应原帖 第 2–7 项；原题语义转述，答案和新增追问为本站原创。"
+      }
+    ],
+    "company": "字节跳动",
+    "interviewDate": "2026-03-03 发布；面试日期未明",
+    "role": "AI 专项节选",
+    "questionCount": 6,
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "interview-ai-tencent",
+    "title": "腾讯 AI 平台：Agent 与 RAG 存储 4 问详解（AI 节选）",
+    "category": "interviews",
+    "topic": "腾讯",
+    "tags": [
+      "腾讯",
+      "腾讯 AI 平台"
+    ],
+    "summary": "AI 专项节选 4 项（原帖 八股部分前 4 项），每题含原创参考答案、机制与编辑追问；不声称覆盖原帖全部条目。",
+    "file": "lessons/interview-ai-tencent.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      },
+      {
+        "title": "Anthropic：多 Agent 系统工程实践",
+        "url": "https://www.anthropic.com/engineering/multi-agent-research-system"
+      },
+      {
+        "title": "RAG 原论文",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Elasticsearch RRF 官方文档",
+        "url": "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion"
+      },
+      {
+        "title": "HNSW 原论文",
+        "url": "https://arxiv.org/abs/1603.09320"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "腾讯原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+        "claim": "只对应原帖 八股部分前 4 项；原题语义转述，答案和新增追问为本站原创。"
+      }
+    ],
+    "company": "腾讯",
+    "interviewDate": "2025-12-29 发布；原帖称 9/16 面试",
+    "role": "AI 专项节选",
+    "questionCount": 4,
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "interview-ai-agent-byte",
+    "title": "字节 Agent 开发：RAG、工具与 AI Coding 8 问详解（AI 节选）",
+    "category": "interviews",
+    "topic": "字节跳动",
+    "tags": [
+      "字节跳动",
+      "字节 Agent 开发"
+    ],
+    "summary": "AI 专项节选 8 项（原帖 第 4–6、12–13、16–18 项），每题含原创参考答案、机制与编辑追问；不声称覆盖原帖全部条目。",
+    "file": "lessons/interview-ai-agent-byte.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "RAG 原论文",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Elasticsearch RRF 官方文档",
+        "url": "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion"
+      },
+      {
+        "title": "HNSW 原论文",
+        "url": "https://arxiv.org/abs/1603.09320"
+      },
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      },
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      },
+      {
+        "title": "LLM-as-a-Judge / MT-Bench 研究",
+        "url": "https://arxiv.org/abs/2306.05685"
+      },
+      {
+        "title": "MCP 2025-11-25 架构规范（固定版本）",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/architecture"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节跳动原帖",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "只对应原帖 第 4–6、12–13、16–18 项；原题语义转述，答案和新增追问为本站原创。"
+      }
+    ],
+    "company": "字节跳动",
+    "interviewDate": "原帖显示 09-15；年份未明确核验",
+    "role": "AI 专项节选",
+    "questionCount": 8,
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "interview-ai-qwen",
+    "title": "千问 AI 研发：Agent 可靠性 8 问详解（AI 节选）",
+    "category": "interviews",
+    "topic": "阿里巴巴（千问）",
+    "tags": [
+      "阿里巴巴（千问）",
+      "千问 AI 研发",
+      "Agent 可靠性 8 问详解（AI 节选）"
+    ],
+    "summary": "AI 专项节选 8 项（原帖 第 1–3、5–6、8–10 项），每题含原创参考答案、机制与编辑追问；不声称覆盖原帖全部条目。",
+    "file": "lessons/interview-ai-qwen.md",
+    "type": "面经详解",
+    "origin": "真实面经 · 原创解答",
+    "version": 2,
+    "related": [],
+    "sources": [
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      },
+      {
+        "title": "Anthropic：长任务 Agent 的 Harness",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+      },
+      {
+        "title": "MCP 2025-11-25 架构规范（固定版本）",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/architecture"
+      },
+      {
+        "title": "LLM-as-a-Judge / MT-Bench 研究",
+        "url": "https://arxiv.org/abs/2306.05685"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "阿里巴巴（千问）原帖",
+        "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+        "claim": "只对应原帖 第 1–3、5–6、8–10 项；原题语义转述，答案和新增追问为本站原创。"
+      }
+    ],
+    "company": "阿里巴巴（千问）",
+    "interviewDate": "2026-09-21 发布；原帖称 9/16 面试",
+    "role": "AI 专项节选",
+    "questionCount": 8,
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "ai-roadmap",
+    "title": "AI 学习地图与近期面经：从通用原理到端侧工程",
+    "category": "ai",
+    "topic": "学习地图与面经",
+    "tags": [
+      "学习地图与面经",
+      "AI 学习地图与近期面经",
+      "从通用原理到端侧工程"
+    ],
+    "summary": "18 篇 AI 正文、四份面经的 26 道 AI 节选解答；分层阅读，不要求转成算法研究岗。",
+    "file": "lessons/ai-roadmap.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 2,
+    "related": [
+      "ai-edge-architecture",
+      "ai-inference",
+      "ai-rag-pipeline",
+      "ai-agent-runtime",
+      "ai-quality"
+    ],
+    "sources": [
+      {
+        "title": "Transformer 原论文",
+        "url": "https://arxiv.org/abs/1706.03762"
+      },
+      {
+        "title": "Google LiteRT 官方入口",
+        "url": "https://developers.google.com/edge/litert"
+      },
+      {
+        "title": "ExecuTorch 执行与编译机制",
+        "url": "https://docs.pytorch.org/executorch/stable/intro-how-it-works.html"
+      },
+      {
+        "title": "Anthropic：Building Effective Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "字节校招 AI infra 后端面经",
+        "url": "https://www.nowcoder.com/feed/main/detail/45814e935b894c4fb13d5a72c81e23a6",
+        "claim": "用于推理与量化选题，不推断行业频率。"
+      },
+      {
+        "title": "腾讯 AI 平台部一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/a2ca69a0a94441a3a0324385670d7f97",
+        "claim": "用于 Agent 与 RAG 选题。"
+      },
+      {
+        "title": "字节跳动 Agent 开发一面凉经",
+        "url": "https://www.nowcoder.com/discuss/929406267141914624?sourceSSR=dynamic",
+        "claim": "用于 RAG、工具与研发质量选题。"
+      },
+      {
+        "title": "千问 AI 研发一面凉经",
+        "url": "https://www.nowcoder.com/feed/main/detail/ebf0ec03e5ee4fa8a140cc8d247b1e20?sourceSSR=dynamic",
+        "claim": "用于 Agent 运行可靠性与 Harness 选题。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "jvm-runtime",
+    "title": "JVM 逐层追问：内存分区、类加载与一段程序的执行",
+    "category": "languages",
+    "topic": "JVM 与运行时",
+    "tags": [
+      "JVM 与运行时",
+      "JVM 逐层追问",
+      "内存分区、类加载与一段程序的执行"
+    ],
+    "summary": "从 JVM 是什么一路追到栈帧、字节码、对象分配、类身份、初始化与 JIT，并区分 ART。",
+    "file": "lessons/jvm-runtime.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "jmm-concurrency",
+      "java-threads",
+      "gc-runtime",
+      "memory-art",
+      "oom-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "JVM 21 规范：运行时结构",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+      },
+      {
+        "title": "JVM 21 规范：加载、链接与初始化",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-5.html"
+      },
+      {
+        "title": "JLS 21：线程与锁",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      },
+      {
+        "title": "AOSP：ART 运行时",
+        "url": "https://source.android.com/docs/core/runtime"
+      },
+      {
+        "title": "JDK 21 G1 收集器",
+        "url": "https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "java-threads",
+    "title": "多线程逐层追问：线程状态、线程池、取消与资源上限",
+    "category": "languages",
+    "topic": "线程与调度",
+    "tags": [
+      "线程与调度",
+      "多线程逐层追问",
+      "线程状态、线程池、取消与资源上限"
+    ],
+    "summary": "从进程线程区别，到线程池排队、拒绝、ThreadLocal 和虚拟线程的版本边界。",
+    "file": "lessons/java-threads.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "jmm-concurrency",
+      "java-locks",
+      "coroutines",
+      "handler",
+      "oom-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "JDK 21 ThreadPoolExecutor",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ThreadPoolExecutor.html"
+      },
+      {
+        "title": "JLS 21：线程与锁",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      },
+      {
+        "title": "JEP 444：JDK 21 虚拟线程",
+        "url": "https://openjdk.org/jeps/444"
+      },
+      {
+        "title": "JDK 24：synchronized 与虚拟线程的变化",
+        "url": "https://docs.oracle.com/en/java/javase/24/migrate/significant-changes-jdk-24.html"
+      },
+      {
+        "title": "JDK 21 AQS 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/AbstractQueuedSynchronizer.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "java-locks",
+    "title": "锁逐层追问：synchronized、CAS、AQS、Condition 与死锁",
+    "category": "languages",
+    "topic": "锁与同步器",
+    "tags": [
+      "锁与同步器",
+      "锁逐层追问"
+    ],
+    "summary": "从保护不变量到加锁、排队、挂起、唤醒和内存语义，强调 JVM 与 ART 的实现区别。",
+    "file": "lessons/java-locks.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "jmm-concurrency",
+      "java-threads",
+      "anr-diagnosis",
+      "binder"
+    ],
+    "sources": [
+      {
+        "title": "JLS 21：线程与锁",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      },
+      {
+        "title": "JVM 21 规范：运行时结构",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+      },
+      {
+        "title": "JDK 21 AQS 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/AbstractQueuedSynchronizer.html"
+      },
+      {
+        "title": "JDK 21 ReentrantLock 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/ReentrantLock.html"
+      },
+      {
+        "title": "JDK 24：synchronized 与虚拟线程的变化",
+        "url": "https://docs.oracle.com/en/java/javase/24/migrate/significant-changes-jdk-24.html"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "gc-runtime",
+    "title": "GC 逐层追问：可达性、分代、写屏障、暂停与收集器",
+    "category": "languages",
+    "topic": "GC 与内存回收",
+    "tags": [
+      "GC 与内存回收",
+      "GC 逐层追问",
+      "可达性、分代、写屏障、暂停与收集器"
+    ],
+    "summary": "从什么是垃圾到并发标记、跨区引用和分配压力，区分算法、收集器与运行时版本。",
+    "file": "lessons/gc-runtime.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "jvm-runtime",
+      "memory-art",
+      "oom-diagnosis",
+      "java-locks"
+    ],
+    "sources": [
+      {
+        "title": "JVM 21 规范：运行时结构",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+      },
+      {
+        "title": "JDK 21 G1 收集器",
+        "url": "https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html"
+      },
+      {
+        "title": "JDK 21 引用对象契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/package-summary.html"
+      },
+      {
+        "title": "AOSP：ART GC 调试",
+        "url": "https://source.android.com/docs/core/runtime/gc-debug"
+      },
+      {
+        "title": "Android 内存管理概览",
+        "url": "https://developer.android.com/topic/performance/memory-overview"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "handler",
+    "title": "Handler 逐层追问：从线程通信到消息队列、唤醒与泄漏",
+    "category": "android",
+    "topic": "线程与消息机制",
+    "tags": [
+      "线程与消息机制",
+      "Handler 逐层追问",
+      "从线程通信到消息队列、唤醒与泄漏"
+    ],
+    "summary": "12 层问题走通投递、队列、分派、延时、同步屏障、空闲处理与生命周期。",
+    "file": "lessons/handler.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "java-threads",
+      "jmm-concurrency",
+      "oom-diagnosis",
+      "anr-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "Handler API 与调度时基",
+        "url": "https://developer.android.com/reference/android/os/Handler"
+      },
+      {
+        "title": "AOSP android-14.0.0_r1 Handler",
+        "url": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/Handler.java"
+      },
+      {
+        "title": "AOSP android-14.0.0_r1 MessageQueue",
+        "url": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/MessageQueue.java"
+      },
+      {
+        "title": "AOSP android-14.0.0_r1 Looper",
+        "url": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/Looper.java"
+      },
+      {
+        "title": "LeakCanary 工作机制",
+        "url": "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
+      },
+      {
+        "title": "AOSP android-14.0.0_r1 native Looper：eventfd / epoll",
+        "url": "https://android.googlesource.com/platform/system/core/+/android-14.0.0_r1/libutils/Looper.cpp"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及 Handler 导致的内存泄漏。"
+      },
+      {
+        "title": "小米安卓一二面 · 2025-10-27",
+        "url": "https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349",
+        "claim": "涉及主线程 Looper 与 Handler。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "memory-art",
+    "title": "ART 内存逐层追问：DEX 执行、对象、Native 与系统回收",
+    "category": "android",
+    "topic": "运行时与内存",
+    "tags": [
+      "运行时与内存",
+      "ART 内存逐层追问",
+      "DEX 执行、对象、Native 与系统回收"
+    ],
+    "summary": "从 Android 怎样执行程序，到托管堆、JNI、图片和 PSS，避免照搬 HotSpot 结论。",
+    "file": "lessons/memory-art.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "jvm-runtime",
+      "gc-runtime",
+      "oom-diagnosis",
+      "ai-edge-performance"
+    ],
+    "sources": [
+      {
+        "title": "AOSP：ART 运行时",
+        "url": "https://source.android.com/docs/core/runtime"
+      },
+      {
+        "title": "Android 内存管理概览",
+        "url": "https://developer.android.com/topic/performance/memory-overview"
+      },
+      {
+        "title": "AOSP：ART GC 调试",
+        "url": "https://source.android.com/docs/core/runtime/gc-debug"
+      },
+      {
+        "title": "Android JNI 引用与资源",
+        "url": "https://developer.android.com/ndk/guides/jni-tips"
+      },
+      {
+        "title": "Android Studio Heap Dump",
+        "url": "https://developer.android.com/studio/profile/capture-heap-dump"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "美团 Android 一面 · 2025-02-17",
+        "url": "https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56",
+        "claim": "涉及内存泄漏观察与常见场景。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "oom-diagnosis",
+    "title": "OOM 逐层追问：资源失败、泄漏引用链与峰值治理",
+    "category": "diagnosis",
+    "topic": "内存与资源故障",
+    "tags": [
+      "内存与资源故障",
+      "OOM 逐层追问",
+      "资源失败、泄漏引用链与峰值治理"
+    ],
+    "summary": "从 OOM 是什么到 GC Roots、支配树、Native 内存、线程耗尽与修复证据。",
+    "file": "lessons/oom-diagnosis.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 3,
+    "related": [
+      "memory-art",
+      "gc-runtime",
+      "java-threads",
+      "handler",
+      "ai-edge-performance"
+    ],
+    "sources": [
+      {
+        "title": "Android 内存性能调查",
+        "url": "https://developer.android.com/topic/performance/memory"
+      },
+      {
+        "title": "Android Studio Heap Dump",
+        "url": "https://developer.android.com/studio/profile/capture-heap-dump"
+      },
+      {
+        "title": "LeakCanary 工作机制",
+        "url": "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
+      },
+      {
+        "title": "Android JNI 引用与资源",
+        "url": "https://developer.android.com/ndk/guides/jni-tips"
+      },
+      {
+        "title": "Android 内存管理概览",
+        "url": "https://developer.android.com/topic/performance/memory-overview"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "jmm-concurrency",
+    "title": "JMM 逐层追问：可见性、happens-before、安全发布与原子性",
+    "category": "languages",
+    "topic": "JMM 与并发",
+    "tags": [
+      "JMM 与并发",
+      "JMM 逐层追问"
+    ],
+    "summary": "从 JMM 是什么到 volatile、锁、final、CAS 与线程交错，区分规范保证和硬件比喻。",
+    "file": "lessons/jmm-concurrency.md",
+    "type": "学习文章",
+    "origin": "面经 + 岗位必修",
+    "version": 3,
+    "related": [
+      "jvm-runtime",
+      "java-threads",
+      "java-locks",
+      "handler"
+    ],
+    "sources": [
+      {
+        "title": "JLS 21：线程与锁",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      },
+      {
+        "title": "JVM 21 规范：运行时结构",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+      },
+      {
+        "title": "JDK 21 ReentrantLock 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/ReentrantLock.html"
+      },
+      {
+        "title": "JDK 21 AQS 契约",
+        "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/AbstractQueuedSynchronizer.html"
+      }
+    ],
+    "evidence": [
+      {
+        "title": "小米安卓一二面 · 2025-10-27",
+        "url": "https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349",
+        "claim": "涉及 Java 内存模型与并发。"
+      }
+    ],
+    "updated": "2026-10-07"
+  },
+  {
+    "id": "runtime-roadmap",
+    "title": "运行时与并发学习地图：JVM → JMM → 线程与锁 → GC → Handler/OOM",
+    "category": "languages",
+    "topic": "学习地图与面经",
+    "tags": [
+      "学习地图与面经",
+      "运行时与并发学习地图"
+    ],
+    "summary": "以八篇完整问答链串起语言规范、执行机制、内存管理与 Android 故障现场。",
+    "file": "lessons/runtime-roadmap.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 2,
+    "related": [
+      "jvm-runtime",
+      "jmm-concurrency",
+      "java-threads",
+      "java-locks",
+      "gc-runtime",
+      "memory-art",
+      "handler",
+      "oom-diagnosis"
+    ],
+    "sources": [
+      {
+        "title": "JVM 21 规范：运行时结构",
+        "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+      },
+      {
+        "title": "JLS 21：线程与锁",
+        "url": "https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html"
+      },
+      {
+        "title": "AOSP：ART 运行时",
+        "url": "https://source.android.com/docs/core/runtime"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-07"
+  }
+]
