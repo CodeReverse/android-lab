@@ -1,6 +1,6 @@
 {
   "lastRun": {
-    "at": "2026-10-25T07:30:55.655Z",
+    "at": "2026-10-25T07:32:04.588Z",
     "operation": "refresh",
     "status": "needs_attention",
     "discovered": 1,
@@ -8,9 +8,20 @@
     "published": 0,
     "warnings": [],
     "modelConfigured": false,
-    "runUrl": null
+    "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40173111740"
   },
   "history": [
+    {
+      "at": "2026-10-25T07:32:04.588Z",
+      "operation": "refresh",
+      "status": "needs_attention",
+      "discovered": 1,
+      "generated": 0,
+      "published": 0,
+      "warnings": [],
+      "modelConfigured": false,
+      "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40173111740"
+    },
     {
       "at": "2026-10-25T07:30:55.655Z",
       "operation": "refresh",
@@ -40,7 +51,7 @@
       "url": "https://www.nowcoder.com/feed/main/detail/022804e3c9034ac4ae74119e9da5ddb8",
       "title": "腾讯移动客户端一面面经",
       "status": "blocked",
-      "checkedAt": "2026-10-25T07:30:55.656Z",
+      "checkedAt": "2026-10-25T07:32:04.589Z",
       "publishedAt": null,
       "dateEvidence": "未核验发布时间；不能把搜索收录或抓取时间当面试日期",
       "reason": "未取得可核验的中文面经正文"
