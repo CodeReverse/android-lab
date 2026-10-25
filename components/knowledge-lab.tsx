@@ -115,6 +115,7 @@ import content from "@/content/generated.json";
 import learningPaths from "@/content/learning-paths.json";
 import { categoryContent, filterCatalog } from "@/lib/catalog";
 import Comparison from "@/components/comparison";
+import UpdateCenter from "@/components/update-center";
 const articles = content.articles;
 type Article = (typeof articles)[number];
 const icons = {
@@ -498,6 +499,7 @@ function Lab() {
               Android Lab<span>INTERVIEW KNOWLEDGE</span>
             </strong>
           </div>
+          <SidebarTrigger className="brand-collapse" />
         </SidebarHeader>
         <SidebarContent>
           <div className="nav-heading">我的知识空间</div>
@@ -1107,8 +1109,7 @@ function Lab() {
                 <p>
                   当前有 {lessons.length} 篇学习正文、{interviews.length} 份面经详解、{articles.length - lessons.length - interviews.length} 份辅助资料和 {content.algorithms.length}
                   道算法原题。正文依据面经选题与资深岗位能力补充。新增正文修改 Markdown
-                  与内容元数据后重新构建；个人数据独立保留。自动采集、提醒与 AI
-                  面试尚未启用。
+                  与内容元数据后重新构建；个人数据独立保留。面经检索和文章草稿生成可在“内容更新”中手动运行或开启定时任务。
                 </p>
                 <Button
                   variant="outline"
@@ -1119,41 +1120,7 @@ function Lab() {
               </section>
             </>
           ) : route === "updates" ? (
-            <>
-              <div className="update-card">
-                <span className="kind">{content.updated} · {content.edition}</span>
-                <h2>技术正文按面试追问组织，补齐 AI 与运行时专题</h2>
-                <p>
-                  {lessons.length} 篇学习文章覆盖运行机制、网络、语言、Compose、跨端、AI 与五项资深能力。
-                  增加二级专题与收录依据筛选；所属分类、延伸阅读和个人关联分开。原有资料仍可查阅，实验设计不等于已复现结果。
-                  AI 分类现有 {lessons.filter((a) => a.category === "ai").length} 篇正文。另有 {interviews.length} 份真实面经的 {interviews.reduce((n, a) => n + a.questionCount, 0)} 个原帖条目详解，AI 节选范围、原帖问题与编辑追问分开标注。
-                  其中 {lessons.filter((a) => a.inquiryCount > 0).length} 篇技术正文采用连续问答；JVM、线程、锁、GC、Handler、JMM、ART 内存与 OOM 已重点扩写。
-                </p>
-                <div className="button-row">
-                  <Button variant="outline" onClick={() => navigate("paths/ai")}>AI 学习路径</Button>
-                  <Button variant="outline" onClick={() => navigate("paths/runtime")}>运行时与并发路径</Button>
-                  <Button variant="outline" onClick={() => navigate("interviews")}>阅读面经详解</Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => openArticle("interview-sources")}
-                  >
-                    查看面经来源
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => openArticle("cross-chapter-6")}
-                  >
-                    查看 App 采用证据
-                  </Button>
-                </div>
-              </div>
-              <div className="section-title">
-                <h2>如何更新</h2>
-              </div>
-              <div className="notice-box">
-                新面经和技术变化先进入核验，再更新正文与版本。此版没有后台自动抓取任务；你可以继续要求补充任意专题，更新内容不影响个人笔记和设置。
-              </div>
-            </>
+            <UpdateCenter />
           ) : (
             <Blank
               title="未找到这篇内容"

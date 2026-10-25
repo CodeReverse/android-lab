@@ -1,0 +1,76 @@
+name: Research and update interviews
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'refresh=检索生成；enable_auto/disable_auto=自动任务开关；publish=确认发布草稿'
+        type: choice
+        default: refresh
+        options: [refresh, enable_auto, disable_auto, publish]
+      source_url:
+        description: '可选：指定中文面经原帖 URL；留空自动检索'
+        type: string
+      draft_id:
+        description: 'publish 时必填：已核验的 research-… 草稿 ID'
+        type: string
+  schedule:
+    - cron: '17 2 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: interview-research
+  cancel-in-progress: false
+jobs:
+  research:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          cache: npm
+      - id: gate
+        name: Check schedule setting
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: node -e "const fs=require('fs'); const c=JSON.parse(fs.readFileSync('content/update-config.json')); fs.appendFileSync(process.env.GITHUB_OUTPUT, 'active='+(process.env.EVENT_NAME!=='schedule'||c.enabled)+'\n')"
+      - if: steps.gate.outputs.active == 'true'
+        run: npm ci
+      - if: steps.gate.outputs.active == 'true'
+        name: Discover sources and generate drafts
+        id: research
+        continue-on-error: true
+        env:
+          UPDATE_OPERATION: ${{ inputs.operation || 'refresh' }}
+          SOURCE_URL: ${{ inputs.source_url }}
+          DRAFT_ID: ${{ inputs.draft_id }}
+          ARTICLE_AI_KEY: ${{ secrets.ARTICLE_AI_KEY }}
+          SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
+          ARTICLE_AI_ENDPOINT: ${{ vars.ARTICLE_AI_ENDPOINT }}
+          ARTICLE_AI_MODEL: ${{ vars.ARTICLE_AI_MODEL }}
+        run: node scripts/updates/run.mjs
+      - if: steps.gate.outputs.active == 'true'
+        name: Validate site and update report
+        run: npm run content:sync && npm test && npm run typecheck && npm run build && npm run check:dist
+      - if: steps.gate.outputs.active == 'true'
+        name: Save changes and publish update status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add content/update-config.json content/updates content/articles.json content/source/lessons content/generated.json public/update-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update interview research and article drafts'
+            git push origin HEAD:main
+            gh workflow run pages.yml --ref main
+          fi
+      - if: steps.research.outcome == 'failure'
+        run: |
+          echo 'Research failed. A failure report has been saved; see Content Updates.'
+          exit 1

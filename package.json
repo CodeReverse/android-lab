@@ -12,21 +12,23 @@
     "build": "vite build",
     "prebuild": "npm run content:sync",
     "preview": "vite preview --host 127.0.0.1",
-    "content:sync": "node scripts/sync-content.mjs",
+    "content:sync": "node scripts/sync-content.mjs && node scripts/updates/status.mjs",
     "test": "node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "check:dist": "node scripts/check-dist.mjs"
+    "check:dist": "node scripts/check-dist.mjs",
+    "research": "node scripts/updates/run.mjs"
   },
   "dependencies": {
+    "cheerio": "1.1.2",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "^1.31.0",
+    "marked": "^15.0.12",
     "radix-ui": "^1.6.7",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "3.6.0",
-    "zod": "^3.25.76",
-    "marked": "^15.0.12"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.2.1",

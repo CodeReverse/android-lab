@@ -1,0 +1,75 @@
+{
+  "enabled": false,
+  "scheduleLabel": "每周一 10:17（北京时间，GitHub 排队可能延迟）",
+  "lookbackDays": 730,
+  "maxCandidates": 8,
+  "maxDraftsPerRun": 2,
+  "model": "deepseek-flash",
+  "modelEndpoint": "https://api.deepseek.com/chat/completions",
+  "sourceDomains": [
+    "nowcoder.com",
+    "juejin.cn",
+    "csdn.net",
+    "zhihu.com",
+    "maimai.cn",
+    "kanzhun.com"
+  ],
+  "companies": [
+    "阿里",
+    "腾讯",
+    "百度",
+    "字节",
+    "小米",
+    "网易",
+    "小红书",
+    "携程",
+    "美团",
+    "滴滴",
+    "京东",
+    "快手",
+    "得物",
+    "哔哩哔哩",
+    "B站",
+    "MetaApp"
+  ],
+  "queries": [
+    "安卓 Android 面经 面试",
+    "Android 高级 资深 面试经验",
+    "AI 大模型 Agent 面经"
+  ],
+  "principleDomains": [
+    "developer.android.com",
+    "source.android.com",
+    "kotlinlang.org",
+    "kotlin.github.io",
+    "docs.oracle.com",
+    "openjdk.org",
+    "rfc-editor.org",
+    "square.github.io",
+    "docs.flutter.dev",
+    "reactnative.dev",
+    "pytorch.org",
+    "huggingface.co",
+    "arxiv.org",
+    "deepseek.com"
+  ],
+  "topicOwnership": {
+    "languages": [
+      "协程",
+      "Coroutine",
+      "JVM",
+      "JMM"
+    ],
+    "compose": [
+      "Compose",
+      "SlotTable",
+      "Snapshot"
+    ],
+    "ai": [
+      "大模型",
+      "RAG",
+      "Agent",
+      "LLM"
+    ]
+  }
+}

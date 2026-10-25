@@ -442,11 +442,6 @@ h1 {
   font-size: 12px;
   color: var(--muted-foreground);
 }
-@media (min-width: 768px) {
-  .breadcrumb [data-slot="sidebar-trigger"] {
-    display: none;
-  }
-}
 @media (max-width: 1180px) {
   .workspace {
     padding: 30px 26px;
@@ -1464,3 +1459,19 @@ h1 {
 .personal-relations { margin-top:36px; }
 .filter-bar { flex-wrap:wrap; }
 @media(max-width:700px) { .content-overview { align-items:flex-start; flex-direction:column; } .path-readings { padding:0 16px 18px; } .lesson-context { padding:16px; } }
+
+/* Collapsing leaves the top-bar trigger reachable at every viewport size. */
+.brand-collapse { margin-left:auto; flex-shrink:0; }
+.update-center { display:grid; gap:22px; }
+.update-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+.update-center .settings-section { margin-bottom:0; min-width:0; }
+.update-center .button-row { flex-wrap:wrap; }
+.update-action { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border:1px solid var(--border); border-radius:8px; font-size:13px; color:var(--foreground); background:var(--surface); }
+.update-action:hover { background:var(--accent); }
+.update-action:focus-visible { outline:2px solid #4668ed; outline-offset:3px; }
+.update-toggle { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:18px 0; }
+.update-items { display:grid; gap:16px; }
+.update-item { border-top:1px solid var(--border); padding-top:18px; overflow-wrap:anywhere; }
+.update-item h3 { margin-top:10px; font-weight:600; }
+.update-item code { user-select:all; }
+@media(max-width:900px) { .update-grid { grid-template-columns:1fr; } }
