@@ -1,16 +1,37 @@
 {
   "lastRun": {
-    "at": "2026-10-25T07:32:04.588Z",
+    "at": "2026-10-25T12:41:21.947Z",
     "operation": "refresh",
     "status": "needs_attention",
-    "discovered": 1,
+    "discovered": 4,
     "generated": 0,
     "published": 0,
-    "warnings": [],
-    "modelConfigured": false,
-    "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40173111740"
+    "warnings": [
+      "research-eab09585f199e47a：来源访问失败 HTTP 403（不绕过登录或验证）",
+      "research-5a06cd4b08fd6fa8：来源访问失败 HTTP 403（不绕过登录或验证）",
+      "research-6ebc1119013a488a：来源访问失败 HTTP 403（不绕过登录或验证）",
+      "research-9f78baf63e8bf3fb：来源访问失败 HTTP 403（不绕过登录或验证）"
+    ],
+    "modelConfigured": true,
+    "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40194209115"
   },
   "history": [
+    {
+      "at": "2026-10-25T12:41:21.947Z",
+      "operation": "refresh",
+      "status": "needs_attention",
+      "discovered": 4,
+      "generated": 0,
+      "published": 0,
+      "warnings": [
+        "research-eab09585f199e47a：来源访问失败 HTTP 403（不绕过登录或验证）",
+        "research-5a06cd4b08fd6fa8：来源访问失败 HTTP 403（不绕过登录或验证）",
+        "research-6ebc1119013a488a：来源访问失败 HTTP 403（不绕过登录或验证）",
+        "research-9f78baf63e8bf3fb：来源访问失败 HTTP 403（不绕过登录或验证）"
+      ],
+      "modelConfigured": true,
+      "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40194209115"
+    },
     {
       "at": "2026-10-25T07:32:04.588Z",
       "operation": "refresh",
@@ -55,6 +76,38 @@
       "publishedAt": null,
       "dateEvidence": "未核验发布时间；不能把搜索收录或抓取时间当面试日期",
       "reason": "未取得可核验的中文面经正文"
+    },
+    {
+      "id": "research-eab09585f199e47a",
+      "url": "https://zhuanlan.zhihu.com/p/5269161722",
+      "title": "美国银行账户Checking account 和Saving account有何区别",
+      "status": "retry",
+      "checkedAt": "2026-10-25T12:41:22.554Z",
+      "reason": "来源访问失败 HTTP 403（不绕过登录或验证）"
+    },
+    {
+      "id": "research-5a06cd4b08fd6fa8",
+      "url": "https://zhuanlan.zhihu.com/p/405469975",
+      "title": "Checking account 和Saving account是什么意思？ - 知乎",
+      "status": "retry",
+      "checkedAt": "2026-10-25T12:41:24.727Z",
+      "reason": "来源访问失败 HTTP 403（不绕过登录或验证）"
+    },
+    {
+      "id": "research-6ebc1119013a488a",
+      "url": "https://www.zhihu.com/question/51678829",
+      "title": "在美国的银行开户时的Checking account 和 Saving account ...",
+      "status": "retry",
+      "checkedAt": "2026-10-25T12:41:25.295Z",
+      "reason": "来源访问失败 HTTP 403（不绕过登录或验证）"
+    },
+    {
+      "id": "research-9f78baf63e8bf3fb",
+      "url": "https://www.zhihu.com/question/22422675",
+      "title": "为什么在国外（包括中国香港）有saving account & current ...",
+      "status": "retry",
+      "checkedAt": "2026-10-25T12:41:26.034Z",
+      "reason": "来源访问失败 HTTP 403（不绕过登录或验证）"
     }
   ]
 }
