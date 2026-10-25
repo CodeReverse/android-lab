@@ -442,7 +442,7 @@
     "file": "lessons/compose-state.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-snapshot",
       "compose-slots",
@@ -460,6 +460,10 @@
       {
         "title": "Compose 各阶段读取",
         "url": "https://developer.android.com/develop/ui/compose/phases"
+      },
+      {
+        "title": "状态保存",
+        "url": "https://developer.android.com/develop/ui/compose/state-saving"
       }
     ],
     "evidence": [
@@ -469,7 +473,7 @@
         "claim": "原帖涉及 Compose 与 State；本文将状态问题展开成学习正文。"
       }
     ],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "compose-snapshot",
@@ -485,7 +489,7 @@
     "file": "lessons/compose-snapshot.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-state",
       "compose-phases"
@@ -502,10 +506,18 @@
       {
         "title": "SnapshotMutationPolicy",
         "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy"
+      },
+      {
+        "title": "状态实现入口",
+        "url": "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
+      },
+      {
+        "title": "变更策略源码契约",
+        "url": "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotMutationPolicy.kt"
       }
     ],
     "evidence": [],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "compose-slots",
@@ -521,7 +533,7 @@
     "file": "lessons/compose-slots.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-compiler",
       "compose-effects"
@@ -538,10 +550,14 @@
       {
         "title": "Runtime 版本变化",
         "url": "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      },
+      {
+        "title": "Runtime 源码目录",
+        "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/"
       }
     ],
     "evidence": [],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "compose-compiler",
@@ -557,7 +573,7 @@
     "file": "lessons/compose-compiler.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-slots",
       "compose-phases",
@@ -575,10 +591,18 @@
       {
         "title": "编译器迁移配置",
         "url": "https://kotlinlang.org/docs/compose-compiler-migration-guide.html"
+      },
+      {
+        "title": "编译器选项 DSL",
+        "url": "https://kotlinlang.org/docs/compose-compiler-options.html"
+      },
+      {
+        "title": "编译器报告解读",
+        "url": "https://developer.android.com/develop/ui/compose/performance/stability/diagnose"
       }
     ],
     "evidence": [],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "compose-phases",
@@ -594,7 +618,7 @@
     "file": "lessons/compose-phases.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-snapshot",
       "performance-proof"
@@ -611,10 +635,14 @@
       {
         "title": "自定义布局",
         "url": "https://developer.android.com/develop/ui/compose/layouts/custom"
+      },
+      {
+        "title": "Recomposer",
+        "url": "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
       }
     ],
     "evidence": [],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "compose-effects",
@@ -630,7 +658,7 @@
     "file": "lessons/compose-effects.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "compose-state",
       "state-restoration",
@@ -651,7 +679,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-07"
+    "updated": "2026-10-25"
   },
   {
     "id": "flutter-runtime",
@@ -2776,5 +2804,434 @@
     ],
     "evidence": [],
     "updated": "2026-10-07"
+  },
+  {
+    "id": "compose-foundations",
+    "title": "Compose 起点：环境、三类结构与源码阅读",
+    "category": "compose",
+    "topic": "基础与版本",
+    "tags": [
+      "Compose",
+      "基础与版本"
+    ],
+    "summary": "分清组合、布局与语义结构，建立可复核的版本和源码阅读边界。",
+    "file": "lessons/compose-foundations.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-components",
+      "compose-state"
+    ],
+    "sources": [
+      {
+        "title": "官方 BOM 说明",
+        "url": "https://developer.android.com/develop/ui/compose/bom"
+      },
+      {
+        "title": "编译器迁移说明",
+        "url": "https://kotlinlang.org/docs/compose-compiler-migration-guide.html"
+      },
+      {
+        "title": "Runtime 发布记录",
+        "url": "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      },
+      {
+        "title": "经典设计说明",
+        "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/compose/runtime/design/how-compose-works.md"
+      },
+      {
+        "title": "声明式思维",
+        "url": "https://developer.android.com/develop/ui/compose/mental-model"
+      },
+      {
+        "title": "阶段",
+        "url": "https://developer.android.com/develop/ui/compose/phases"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-components",
+    "title": "Compose 页面开发：组件、Modifier、主题与 CompositionLocal",
+    "category": "compose",
+    "topic": "组件与设计系统",
+    "tags": [
+      "Compose",
+      "组件与设计系统"
+    ],
+    "summary": "从搜索收藏页学习组件边界、主题、无障碍、Preview 与隐式依赖。",
+    "file": "lessons/compose-components.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-state",
+      "compose-layout",
+      "compose-testing"
+    ],
+    "sources": [
+      {
+        "title": "Modifier 契约",
+        "url": "https://developer.android.com/develop/ui/compose/modifiers"
+      },
+      {
+        "title": "语义说明",
+        "url": "https://developer.android.com/develop/ui/compose/accessibility/semantics"
+      },
+      {
+        "title": "CompositionLocal 官方解释",
+        "url": "https://developer.android.com/develop/ui/compose/compositionlocal"
+      },
+      {
+        "title": "Material 3 主题",
+        "url": "https://developer.android.com/develop/ui/compose/designsystems/material3"
+      },
+      {
+        "title": "Preview",
+        "url": "https://developer.android.com/develop/ui/compose/tooling/previews"
+      },
+      {
+        "title": "状态提升",
+        "url": "https://developer.android.com/develop/ui/compose/state-hoisting"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-layout",
+    "title": "Compose 布局：Constraints、测量、放置与 Modifier.Node",
+    "category": "compose",
+    "topic": "布局与 Modifier",
+    "tags": [
+      "Compose",
+      "布局与 Modifier"
+    ],
+    "summary": "手算标签换行布局，解释固有测量、子组合、节点更新与约束错误。",
+    "file": "lessons/compose-layout.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-phases",
+      "compose-lazy",
+      "compose-graphics-animation"
+    ],
+    "sources": [
+      {
+        "title": "自定义布局",
+        "url": "https://developer.android.com/develop/ui/compose/layouts/custom"
+      },
+      {
+        "title": "固有测量",
+        "url": "https://developer.android.com/develop/ui/compose/layouts/intrinsic-measurements"
+      },
+      {
+        "title": "自定义 Modifier 与 Node",
+        "url": "https://developer.android.com/develop/ui/compose/custom-modifiers"
+      },
+      {
+        "title": "约束与 Modifier 顺序",
+        "url": "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers"
+      },
+      {
+        "title": "SubcomposeLayout API",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/SubcomposeLayoutState"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-graphics-animation",
+    "title": "Compose 绘制与动画：缓存、图层、帧与中断",
+    "category": "compose",
+    "topic": "绘制与动画",
+    "tags": [
+      "Compose",
+      "绘制与动画"
+    ],
+    "summary": "从进度环与可中断面板推导绘制缓存、图层代价和动画 API 选择。",
+    "file": "lessons/compose-graphics-animation.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-phases",
+      "compose-input",
+      "compose-performance"
+    ],
+    "sources": [
+      {
+        "title": "绘制修饰符",
+        "url": "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+      },
+      {
+        "title": "值动画",
+        "url": "https://developer.android.com/develop/ui/compose/animation/value-based"
+      },
+      {
+        "title": "动画组件",
+        "url": "https://developer.android.com/develop/ui/compose/animation/composables-modifiers"
+      },
+      {
+        "title": "Graphics 概览",
+        "url": "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+      },
+      {
+        "title": "动画定制",
+        "url": "https://developer.android.com/develop/ui/compose/animation/customize"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-input",
+    "title": "Compose 输入：手势、嵌套滚动、焦点与 IME",
+    "category": "compose",
+    "topic": "手势与输入",
+    "tags": [
+      "Compose",
+      "手势与输入"
+    ],
+    "summary": "解释事件传播和消费、文本编辑、焦点、Insets 及交互边界。",
+    "file": "lessons/compose-input.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-layout",
+      "compose-effects",
+      "compose-testing"
+    ],
+    "sources": [
+      {
+        "title": "手势抽象层级",
+        "url": "https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures"
+      },
+      {
+        "title": "嵌套滚动",
+        "url": "https://developer.android.com/develop/ui/compose/touch-input/pointer-input/scroll"
+      },
+      {
+        "title": "文本输入",
+        "url": "https://developer.android.com/develop/ui/compose/text/user-input"
+      },
+      {
+        "title": "Insets",
+        "url": "https://developer.android.com/develop/ui/compose/system/insets"
+      },
+      {
+        "title": "焦点行为",
+        "url": "https://developer.android.com/develop/ui/compose/touch-input/focus/change-focus-behavior"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-lazy",
+    "title": "Compose 列表：Lazy、key、contentType 与分页",
+    "category": "compose",
+    "topic": "列表与复用",
+    "tags": [
+      "Compose",
+      "列表与复用"
+    ],
+    "summary": "按草稿错位、头插、复用和分页案例解释列表身份与性能。",
+    "file": "lessons/compose-lazy.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-slots",
+      "compose-state",
+      "compose-performance"
+    ],
+    "sources": [
+      {
+        "title": "列表官方指南",
+        "url": "https://developer.android.com/develop/ui/compose/lists"
+      },
+      {
+        "title": "Paging Compose",
+        "url": "https://developer.android.com/topic/libraries/architecture/paging/v3-paged-data#jetpack-compose"
+      },
+      {
+        "title": "Lazy 列表源码目录",
+        "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-performance",
+    "title": "Compose 性能诊断：从卡顿现场到基准与治理",
+    "category": "compose",
+    "topic": "性能诊断与治理",
+    "tags": [
+      "Compose",
+      "性能诊断与治理"
+    ],
+    "summary": "把重组、布局、绘制和业务热点放回帧证据，设计可归因的优化对照。",
+    "file": "lessons/compose-performance.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-phases",
+      "compose-compiler",
+      "performance-proof",
+      "compose-testing"
+    ],
+    "sources": [
+      {
+        "title": "性能建议",
+        "url": "https://developer.android.com/develop/ui/compose/performance/bestpractices"
+      },
+      {
+        "title": "Macrobenchmark",
+        "url": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      },
+      {
+        "title": "Baseline Profiles",
+        "url": "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      },
+      {
+        "title": "Compose 性能工具",
+        "url": "https://developer.android.com/develop/ui/compose/performance"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-testing",
+    "title": "Compose 测试：语义树、同步、动画与恢复",
+    "category": "compose",
+    "topic": "测试与正确性",
+    "tags": [
+      "Compose",
+      "测试与正确性"
+    ],
+    "summary": "用状态输入、事件输出、过期响应与恢复案例建立分层验证方法。",
+    "file": "lessons/compose-testing.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-state",
+      "compose-effects",
+      "compose-interop"
+    ],
+    "sources": [
+      {
+        "title": "语义树",
+        "url": "https://developer.android.com/develop/ui/compose/accessibility/semantics"
+      },
+      {
+        "title": "测试同步",
+        "url": "https://developer.android.com/develop/ui/compose/testing/synchronization"
+      },
+      {
+        "title": "Compose 状态保存",
+        "url": "https://developer.android.com/develop/ui/compose/state-saving"
+      },
+      {
+        "title": "Compose 测试入口",
+        "url": "https://developer.android.com/develop/ui/compose/testing"
+      },
+      {
+        "title": "测试 API",
+        "url": "https://developer.android.com/develop/ui/compose/testing/apis"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-navigation",
+    "title": "Compose 架构与导航：所有权、返回栈与自适应",
+    "category": "compose",
+    "topic": "架构与导航",
+    "tags": [
+      "Compose",
+      "架构与导航"
+    ],
+    "summary": "设计屏幕状态、导航参数、事件、窗口身份和公共组件边界。",
+    "file": "lessons/compose-navigation.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-state",
+      "compose-effects",
+      "compose-interop"
+    ],
+    "sources": [
+      {
+        "title": "状态提升",
+        "url": "https://developer.android.com/develop/ui/compose/state-hoisting"
+      },
+      {
+        "title": "官方导航指南",
+        "url": "https://developer.android.com/guide/navigation"
+      },
+      {
+        "title": "自适应布局",
+        "url": "https://developer.android.com/develop/ui/compose/layouts/adaptive"
+      },
+      {
+        "title": "Navigation 3",
+        "url": "https://developer.android.com/guide/navigation/navigation-3"
+      },
+      {
+        "title": "保存 UI 状态",
+        "url": "https://developer.android.com/topic/libraries/architecture/saving-states"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
+  },
+  {
+    "id": "compose-interop",
+    "title": "Compose 互操作与迁移：宿主、复用、回滚与证据",
+    "category": "compose",
+    "topic": "互操作与迁移",
+    "tags": [
+      "Compose",
+      "互操作与迁移"
+    ],
+    "summary": "解释 ComposeView 与 AndroidView 的资源归属，并形成渐进迁移和验证方案。",
+    "file": "lessons/compose-interop.md",
+    "type": "学习文章",
+    "origin": "岗位必修",
+    "version": 1,
+    "related": [
+      "compose-navigation",
+      "compose-testing",
+      "compose-performance",
+      "project-evidence"
+    ],
+    "sources": [
+      {
+        "title": "Compose in Views",
+        "url": "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      },
+      {
+        "title": "Views in Compose",
+        "url": "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      },
+      {
+        "title": "迁移策略",
+        "url": "https://developer.android.com/develop/ui/compose/migrate/strategy"
+      }
+    ],
+    "evidence": [],
+    "updated": "2026-10-25"
   }
 ]

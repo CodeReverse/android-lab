@@ -10,29 +10,30 @@
     ],
     "stages": {
       "compose-stage-0": [
-        "compose-state"
+        "compose-foundations"
       ],
       "compose-stage-1": [
-        "compose-state",
-        "compose-phases"
+        "compose-components"
       ],
       "compose-stage-2": [
-        "compose-state",
-        "state-restoration"
+        "compose-state"
       ],
       "compose-stage-3": [
-        "compose-effects",
-        "flow-state"
+        "compose-effects"
       ],
       "compose-stage-4": [
-        "compose-phases"
+        "compose-layout",
+        "compose-graphics-animation",
+        "compose-lazy",
+        "compose-input"
       ],
       "compose-stage-5": [
         "compose-slots",
         "compose-phases"
       ],
       "compose-stage-6": [
-        "compose-snapshot"
+        "compose-snapshot",
+        "compose-effects"
       ],
       "compose-stage-7": [
         "compose-slots"
@@ -41,19 +42,18 @@
         "compose-compiler"
       ],
       "compose-stage-9": [
-        "compose-phases",
-        "performance-proof",
-        "testing-strategy"
+        "compose-performance",
+        "compose-testing"
       ],
       "compose-stage-10": [
-        "compose-effects",
-        "architecture-evolution"
+        "compose-navigation",
+        "compose-interop"
       ]
     },
     "title": "Compose：从 State 到编译器",
     "category": "compose",
     "overview": "compose-roadmap",
-    "description": "六篇机制正文与十一阶段地图；随时跳读，不设置关卡。",
+    "description": "十一阶段逐项对应十六篇学习正文；每个知识点标注文章与问题编号，附官方资料和实验设计。可自由跳读。",
     "tracks": []
   },
   "ai": {

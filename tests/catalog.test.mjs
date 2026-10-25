@@ -95,6 +95,29 @@ test("AI evidence records match selected original items and retain uncertain dat
   assert.match(articles.find((a) => a.id === uncertain.answerArticle).interviewDate, /年份未明确核验/);
 });
 
+test("Compose stages link knowledge points to actual answers with valid question numbers", () => {
+  const byId = new Map(articles.map((a) => [a.id, a]));
+  assert.equal(Object.keys(paths.compose.stages).length, 11);
+  for (const [stageId, readings] of Object.entries(paths.compose.stages)) {
+    const stage = byId.get(stageId);
+    const mappingRows = [...stage.markdown.matchAll(/^\| [^\n]+ \| \[[^\]]+\]\(#\/article\/([^)]*)\) \| 第 ([\d、–]+) 问 \|$/gm)];
+    assert.ok(mappingRows.length > 0, `${stageId} needs a knowledge-to-answer mapping`);
+    assert.deepEqual(new Set(mappingRows.map((row) => row[1])), new Set(readings));
+    for (const [, id, range] of mappingRows) {
+      const lesson = byId.get(id);
+      assert.equal(lesson?.type, "学习文章", `${id} must be an article, not an outline`);
+      assert.equal(lesson.category, "compose");
+      for (const num of range.match(/\d+/g).map(Number)) {
+        assert.ok(num >= 1 && num <= lesson.inquiryCount, `${stageId} links missing question ${id}/${num}`);
+      }
+      assert.ok(lesson.sources.length > 0, `${id} needs principle sources`);
+    }
+  }
+  for (const id of ["compose-foundations", "compose-components", "compose-layout", "compose-graphics-animation", "compose-input", "compose-lazy", "compose-performance", "compose-testing", "compose-navigation", "compose-interop"]) {
+    assert.ok(Object.values(paths.compose.stages).flat().includes(id), `${id} must be reachable from a stage`);
+  }
+});
+
 test("technical lessons expose ordered, answered question chains across subjects", () => {
   const technical = new Set(["android", "network", "languages", "compose", "cross-platform", "ai", "diagnosis", "performance"]);
   const maps = new Set(["ai-roadmap", "runtime-roadmap"]);

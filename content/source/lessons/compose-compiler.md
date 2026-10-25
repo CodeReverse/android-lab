@@ -1,5 +1,7 @@
 ## 阅读方式
 
+本次补充：2026-10-25。先读前半篇建立概念，再读后半篇的具体推演、代码示意和验证方法。示例未在本网站执行 Android 编译或设备实验。
+
 按定义、结构、运行过程、实现细节、故障与验证逐层阅读。问题顺序由本站编写；文末面经映射只证明相应主题被问过，不代表原帖出现了本篇全部追问。每问下方即为对应讲解。
 
 ## 第 1 问：Compose 编译插件识别什么，生成什么？
@@ -39,6 +41,55 @@ Kotlin 2.x 的 Compose 编译器插件与 Kotlin 版本配套配置，Runtime、
 ## 第 6 问：怎样对照编译产物与运行表现验证机制？
 
 固定 Kotlin/插件/Runtime 版本，对不可变模型、普通可变模型和正确可观察模型生成 compiler reports。比较配置差异，再用 release 场景验证显示正确性与性能。先验证语义正确，再接受“更少执行”的结果。
+
+## 第 7 问：给一个函数，怎样解释它的编译协议而不背十六进制掩码？
+
+原始概念函数：`@Composable fun Title(label: String) { Text(label) }`。对于符合可重启/可跳过条件的形式，可按下面伪代码理解；它不是可编译代码，也不承诺实际 lowering 顺序、参数个数或位布局。
+
+```text
+接收 label、Composer 和调用方变化信息
+进入相应组合分组
+如果调用方信息不足：按适用规则比较 label
+如果本范围需要执行：运行 Text 的调用协议
+否则：跳过可复用的组内容
+离开分组；按需要登记后续重启入口
+```
+
+changed 信息是执行决策输入，不是“缓存好了整个 UI”。默认参数还需要表达哪些参数未显式提供；直接状态读取造成的失效又是另一条触发路径。一个函数是否形成独立重启边界，要结合内联、返回值、注解和编译变换判断，不能套用所有 @Composable 都同构的反编译模板。
+
+## 第 8 问：稳定与不稳定参数，怎样用对照矩阵回答跳过问题？
+
+前提是所选版本强跳过启用、目标函数具有相应资格、没有自身失效等其他强制执行条件。稳定参数通常使用 equals，不稳定参数按实例身份比较。
+
+| 输入变化 | 应先检查的事实 | 推理方向 |
+| --- | --- | --- |
+| 新建但内容相等的稳定模型 | equals 与稳定契约是否成立 | 参数比较可判未变 |
+| 新建但内容相等的不稳定模型 | 实例是否相同 | 不应仅凭内容相等推断能跳过 |
+| 同实例普通 var 被改 | 是否有可观察通知 | 没通知可能显示旧值，不能当优化成功 |
+| 参数相同但内部 State 失效 | 该范围是否实际订阅 | 参数未变不排除本范围重执行 |
+
+`@Stable`、`@Immutable` 约束数据行为，错误承诺可能破坏 UI。集合接口只读与整个对象图不可变也不同。矩阵是教学推理条件，不是各构建版本的实测结果。[强跳过规则](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)。
+
+## 第 9 问：lambda 自动记忆化为什么不完全等于手写 remember？
+
+强跳过下编译器会对组合中的 lambda 做记忆化处理，捕获值参与键比较；稳定与不稳定捕获按相应规则处理。普通手写 remember keys 使用对象相等规则，不能把源码中的概念转换当成两者在所有情况下完全等价。lambda 本身的稳定性与它每次是否为新实例也是两个问题。
+
+原创建模：回调捕获当前 Article 对象；数据层每次创建一个新的不稳定实例，即使 ID 相同，捕获身份仍可能变化。解决是否改成捕获稳定 ID，应基于实际语义，不能忽略回调确实需要的其他数据。需要计时不中断但读取最新回调时，使用 Effect 的最新值模式，而非盲目冻结 lambda。
+
+## 第 10 问：怎样生成 reports/metrics 并读出可验证结论？
+
+使用与 Kotlin 配套的 Compose 编译插件，在目标模块配置报告目录。下面是 Kotlin 2.x 插件 DSL 的示意，需要置于已启用插件的模块中；它不是本网站执行过的 Android 构建。
+
+```kotlin
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose-reports")
+    metricsDestination = layout.buildDirectory.dir("compose-metrics")
+}
+```
+
+在该项目真实的 release variant 执行 Kotlin 编译任务，检查 composables/classes 报告和汇总指标；名称按插件版本核对。关注目标函数的 restartable/skippable、参数稳定性及类型推断，再对照运行行为。报告不包含真实帧耗时，不能仅凭 skippable 数增加宣布优化成功。
+
+从 Kotlin 仓库 Compose compiler 的 lower 目录定位函数体变换、参数与类型处理，并固定到项目版本；生成字节码/反编译结果用于观察协议，不等同全部 IR。资料：[编译器选项 DSL](https://kotlinlang.org/docs/compose-compiler-options.html)、[编译器报告解读](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)。
 
 ## 原理依据与适用边界
 

@@ -1,6 +1,6 @@
 # Compose 由浅到深学习路径
 
-更新：2026-10-06。适用：已有 Android 开发经验，系统复习 Compose，并准备资深工程师面试。本文是学习内容、追问和实验的设计；实验尚未执行，不把预期写成测量结果。
+更新：2026-10-25。版本：2。适用：已有 Android 开发经验，系统复习 Compose，并准备资深工程师面试。十一阶段现在逐项链接到 16 篇学习正文；各表给出知识点对应的文章和问题编号。正文包含答案、案例推演与原理资料；Android 实验尚未执行，不把预期写成测量结果。
 
 使用方式：可按薄弱点选择章节、跳读和查阅；前置关系只作建议。进度管理与交互练习分别由用户设置，默认关闭。下文“必修”“验收”“自测”表示系统复习时的建议深度与自检方法，不是访问门槛、默认任务或自动记录要求。阅读不自动计入掌握进度。
 
@@ -30,6 +30,17 @@
 
 ## 2. 阶段 0：先建立准确的概念和版本边界
 
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| Compose 职责；组合 / UI / Semantics 三类结构 | [Compose 起点：环境、三类结构与源码阅读](#/article/compose-foundations) | 第 1–3 问 |
+| Kotlin/Compiler、BOM、Runtime 与环境清单 | [Compose 起点：环境、三类结构与源码阅读](#/article/compose-foundations) | 第 4 问 |
+| 源码版本、阅读顺序、入门自检 | [Compose 起点：环境、三类结构与源码阅读](#/article/compose-foundations) | 第 5–6 问 |
+
+
 ### 2.1 三类结构不能混为一谈
 
 | 结构 | 学习重点 | 避免的误解 |
@@ -54,6 +65,19 @@
 
 ## 3. 阶段 1：从正确写页面开始
 
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| 声明式页面、组件拆分、加载/空/错误态 | [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](#/article/compose-components) | 第 1–2 问 |
+| Modifier 参数、顺序与作用域 | [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](#/article/compose-components) | 第 3 问 |
+| 主题、深浅色、字号、国际化、RTL、无障碍 | [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](#/article/compose-components) | 第 4 问 |
+| CompositionLocal 的依赖与更新范围 | [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](#/article/compose-components) | 第 5 问 |
+| Stateless/Stateful、Preview 与验证边界 | [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](#/article/compose-components) | 第 1、6 问 |
+
+
 ### 必修知识
 
 - 声明式 UI：输入状态描述界面；UI 事件回传；Composable 的职责和可重执行性。
@@ -72,6 +96,19 @@
 阅读：[Modifier](https://developer.android.com/develop/ui/compose/modifiers?hl=zh-cn)、[布局基础](https://developer.android.com/develop/ui/compose/layouts/basics?hl=zh-cn)。
 
 ## 4. 阶段 2：状态使用、所有权和恢复
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| State/MutableState、属性委托、remember、普通集合 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 1–4 问 |
+| 状态提升、持有者与恢复矩阵 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 5、7 问 |
+| rememberSaveable、Saver、SaveableStateHolder、SavedStateHandle | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 7–8 问 |
+| remember(key)、key(...) 与身份 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 9 问 |
+| Flow 收集生命周期与生产生命周期 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 10 问 |
+
 
 ### 必修知识
 
@@ -95,6 +132,18 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 
 ## 5. 阶段 3：副作用、协程和数据接入
 
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| LaunchedEffect、key、取消与最新回调 | [Compose 副作用与互操作：key、取消、清理与旧闭包](#/article/compose-effects) | 第 1–3 问 |
+| DisposableEffect、SideEffect、rememberCoroutineScope | [Compose 副作用与互操作：key、取消、清理与旧闭包](#/article/compose-effects) | 第 4、9–10 问 |
+| produceState、snapshotFlow、derivedStateOf | [Compose 副作用与互操作：key、取消、清理与旧闭包](#/article/compose-effects) | 第 7 问 |
+| 防抖、去重、异常、过期结果与事件语义 | [Compose 副作用与互操作：key、取消、清理与旧闭包](#/article/compose-effects) | 第 8、10 问 |
+
+
 ### 必修知识
 
 - LaunchedEffect：key、启动、取消、重新启动，关联组合生命周期。
@@ -114,6 +163,22 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 面试官继续问：LaunchedEffect(Unit) 是整个应用只运行一次吗？为什么 key 选错会重复请求？snapshotFlow 为什么不应被当作无损事件队列？derivedStateOf 为什么不适合机械包住所有计算？
 
 ## 6. 阶段 4：布局、绘制、输入和动画
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| Constraints、Row/Column/Box、weight、基线、自定义布局 | [Compose 布局：Constraints、测量、放置与 Modifier.Node](#/article/compose-layout) | 第 1–3 问 |
+| Intrinsic、SubcomposeLayout、测量与放置 | [Compose 布局：Constraints、测量、放置与 Modifier.Node](#/article/compose-layout) | 第 4–5 问 |
+| Modifier.Node、失效与布局故障 | [Compose 布局：Constraints、测量、放置与 Modifier.Node](#/article/compose-layout) | 第 6–7 问 |
+| Canvas、绘制修饰符、缓存、graphicsLayer | [Compose 绘制与动画：缓存、图层、帧与中断](#/article/compose-graphics-animation) | 第 1–3 问 |
+| animate*AsState、Animatable、Transition、内容动画 | [Compose 绘制与动画：缓存、图层、帧与中断](#/article/compose-graphics-animation) | 第 4–6 问 |
+| LazyColumn/Grid、key、contentType、恢复、分页 | [Compose 列表：Lazy、key、contentType 与分页](#/article/compose-lazy) | 第 1–6 问 |
+| clickable、pointerInput、传播、消费、手势竞争、嵌套滚动 | [Compose 输入：手势、嵌套滚动、焦点与 IME](#/article/compose-input) | 第 1–4 问 |
+| 文本编辑、焦点、键盘、IME/Insets、自适应 | [Compose 输入：手势、嵌套滚动、焦点与 IME](#/article/compose-input) | 第 5–7 问 |
+
 
 ### 必修知识
 
@@ -136,6 +201,19 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 阅读：[布局](https://developer.android.com/develop/ui/compose/layouts/basics?hl=zh-cn)、[阶段](https://developer.android.google.cn/develop/ui/compose/phases?hl=zh-cn)、[手势](https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures?hl=zh-cn)。
 
 ## 7. 阶段 5：组合身份、重组和“刷新”
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| 调用位置、条件分支与列表身份 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 1–4、7–8 问 |
+| 读取阶段、重组、测量、放置和绘制 | [Compose 如何刷新：组合、测量、放置与绘制失效](#/article/compose-phases) | 第 1–6 问 |
+| 写入到调度、应用变更与显示 | [Compose 如何刷新：组合、测量、放置与绘制失效](#/article/compose-phases) | 第 7 问 |
+| 重启、跳过、直接失效、内联边界 | [Compose 如何刷新：组合、测量、放置与绘制失效](#/article/compose-phases) | 第 8 问 |
+| 组合/布局回写与反馈循环 | [Compose 如何刷新：组合、测量、放置与绘制失效](#/article/compose-phases) | 第 9 问 |
+
 
 ### 核心路线
 
@@ -165,6 +243,19 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 
 ## 8. 阶段 6：State 的底层——Snapshot
 
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| StateObject/StateRecord、读写与可见性 | [Snapshot 原理：状态版本、读取观察与冲突合并](#/article/compose-snapshot) | 第 1–2、7 问 |
+| MutableSnapshot、apply、冲突、合并、mutation policy | [Snapshot 原理：状态版本、读取观察与冲突合并](#/article/compose-snapshot) | 第 3–4、8 问 |
+| 观察者、动态依赖、derivedStateOf | [Snapshot 原理：状态版本、读取观察与冲突合并](#/article/compose-snapshot) | 第 4–5、9 问 |
+| 隔离实验、dispose、线程与事务边界 | [Snapshot 原理：状态版本、读取观察与冲突合并](#/article/compose-snapshot) | 第 6、10 问 |
+| snapshotFlow 与派生结果的差异 | [Compose 副作用与互操作：key、取消、清理与旧闭包](#/article/compose-effects) | 第 7 问 |
+
+
 ### 学习顺序
 
 1. 从 MutableState 的 value 读写进入：观察什么对象，变化策略如何判定等价。
@@ -191,6 +282,19 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 源码阅读任务以实际版本定位相关类和读写路径；本轮没有声称已逐行核验所有当前内部类。
 
 ## 9. 阶段 7：SlotTable 如何建立和更新
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| Composer、首次组合、remember 与分组 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 1–2、7 问 |
+| 条件切换、同位置重执行、移动、插入与删除 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 3–4、8 问 |
+| 经典 SlotTable、gap buffer、anchor、LinkTable 边界 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 5、9 问 |
+| Applier、节点变更、遗忘与放弃 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 10 问 |
+| 最小复现与源码阅读验证 | [组合树与 SlotTable：位置身份怎样保存 remember](#/article/compose-slots) | 第 6 问 |
+
 
 ### 先回答职责
 
@@ -221,6 +325,18 @@ remember 解决组合中的值复用，mutableStateOf 提供可观察状态；�
 面试官继续问：一个 group 就是一个 UI 节点吗？为什么 remember 不只用函数名作缓存 key？条件分支为什么不会让后面所有 remember 都取错值？移动内容与删除后重建有何语义差别？插入大量内容时经典存储方案的成本在哪里？
 
 ## 10. 阶段 8：编译过程到底做了什么
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| Composable 协议、参数变化、默认参数、分组与重启 | [Compose 编译器：IR 变换、changed 标记与强跳过](#/article/compose-compiler) | 第 1–2、7 问 |
+| 稳定性推断、注解、集合与强跳过比较 | [Compose 编译器：IR 变换、changed 标记与强跳过](#/article/compose-compiler) | 第 3–4、8 问 |
+| lambda 捕获与自动记忆化 | [Compose 编译器：IR 变换、changed 标记与强跳过](#/article/compose-compiler) | 第 9 问 |
+| 插件升级、报告、metrics、IR 与产物对照 | [Compose 编译器：IR 变换、changed 标记与强跳过](#/article/compose-compiler) | 第 5–6、10 问 |
+
 
 ### 按概念顺序掌握转换
 
@@ -256,6 +372,20 @@ Strong skipping 下，符合条件的可重启函数可以因不稳定参数也�
 
 ## 11. 阶段 9：性能诊断、测试和正确性
 
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| 现场→trace→线程/阶段→热点→对照 | [Compose 性能诊断：从卡顿现场到基准与治理](#/article/compose-performance) | 第 1–3 问 |
+| 稳定性反例、Release、Macrobenchmark、Baseline Profiles | [Compose 性能诊断：从卡顿现场到基准与治理](#/article/compose-performance) | 第 4–5 问 |
+| 性能预算、报告、流式文本与成果边界 | [Compose 性能诊断：从卡顿现场到基准与治理](#/article/compose-performance) | 第 6 问 |
+| 语义选择器、状态输入、事件输出、异步响应 | [Compose 测试：语义树、同步、动画与恢复](#/article/compose-testing) | 第 1–3 问 |
+| 动画时钟、恢复、截图与无障碍 | [Compose 测试：语义树、同步、动画与恢复](#/article/compose-testing) | 第 4–6 问 |
+| 测试分层、回归与发布门槛 | [Compose 测试：语义树、同步、动画与恢复](#/article/compose-testing) | 第 7 问 |
+
+
 ### 诊断顺序
 
 现象与复现条件 → 帧和线程证据 → 判断组合/布局/绘制/业务计算/图片或平台侧成本 → 提出最小改动 → 同条件比较 → 检查正确性与副作用。
@@ -278,6 +408,20 @@ Strong skipping 下，符合条件的可重启函数可以因不稳定参数也�
 面试官继续问：重组次数下降而卡顿不变，下一步查什么？基准测试为什么要区分冷启动、预热和缓存？稳定性注解“优化”后为何可能产生错误界面？怎样避免优化只是把代价转移到内存或输入延迟？
 
 ## 12. 阶段 10：架构、互操作与迁移
+
+### 本阶段知识点与学习正文
+
+按薄弱点点击文章，使用文内目录跳到对应问题；这些都是直接附答案的正文。
+
+| 知识点 | 具体学习文章 | 定位 |
+| --- | --- | --- |
+| ViewModel、页面持有者、纯 UI 与领域层 | [Compose 架构与导航：所有权、返回栈与自适应](#/article/compose-navigation) | 第 1 问 |
+| 导航参数、深链接、返回栈、恢复、事件 | [Compose 架构与导航：所有权、返回栈与自适应](#/article/compose-navigation) | 第 2–4 问 |
+| 多窗口/大屏、模块化、设计系统与组件 API | [Compose 架构与导航：所有权、返回栈与自适应](#/article/compose-navigation) | 第 5–6 问 |
+| ComposeView、AndroidView、宿主与释放策略 | [Compose 互操作与迁移：宿主、复用、回滚与证据](#/article/compose-interop) | 第 1–3 问 |
+| 池化复用、onReset/onRelease 与资源归属 | [Compose 互操作与迁移：宿主、复用、回滚与证据](#/article/compose-interop) | 第 4 问 |
+| 迁移策略、测试、灰度、回滚、兼容、构建与责任 | [Compose 互操作与迁移：宿主、复用、回滚与证据](#/article/compose-interop) | 第 5–6 问 |
+
 
 ### 必修知识
 

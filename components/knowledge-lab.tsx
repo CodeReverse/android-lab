@@ -804,7 +804,7 @@ function Lab() {
                   <span className="kind">Compose 专项</span>
                   <h2>从开发使用到 Runtime 与编译器</h2>
                   <p>
-                    先沿六篇正文理解机制，再用十一阶段地图查缺补漏。可自由跳读，不设置关卡。
+                    {selectedPath.description}
                   </p>
                 </div>
                 <Button
@@ -816,7 +816,7 @@ function Lab() {
               </div>
               <div className="section-title"><h2>正文主线</h2><span>State → Snapshot → 组合结构 → Compiler → Phases → Effects</span></div>
               {articleRows(learningPaths.compose.core.map((id) => articles.find((a) => a.id === id)!))}
-              <div className="section-title"><h2>分阶段复习地图</h2><span>原有检查点及对应正文</span></div>
+              <div className="section-title"><h2>分阶段学习文章</h2><span>打开阶段查看知识点与问题编号，或直接阅读下方正文</span></div>
               <div className="path-list">
                 {articles
                   .filter((a) => a.id.startsWith("compose-stage-"))

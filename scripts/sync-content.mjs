@@ -20,6 +20,10 @@ const ids = {
 const docs = Object.fromEntries(
   Object.entries(files).map(([k, v]) => [k, read(v)]),
 );
+const composeMetadata = {
+  updated: docs.compose.match(/更新：(\d{4}-\d{2}-\d{2})/)?.[1],
+  version: Number(docs.compose.match(/版本：(\d+)/)?.[1] || 1),
+};
 const articles = [];
 const escape = (s) =>
   s.replace(
@@ -111,6 +115,7 @@ add(
   docs.compose,
   "学习指南",
   "11 个阶段，从正确开发到 Runtime、编译器和性能诊断。",
+  composeMetadata,
 );
 add(
   "cross-overview",
@@ -146,6 +151,8 @@ for (let n = 2; n <= 12; n++) {
     ],
     body,
     "学习指南",
+    "知识点逐项对应学习正文与问题编号，附原理资料、追问和实验设计。",
+    composeMetadata,
   );
 }
 for (let n = 2; n <= 7; n++) {

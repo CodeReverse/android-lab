@@ -1,5 +1,7 @@
 ## 阅读方式
 
+本次补充：2026-10-25。先读前半篇建立概念，再读后半篇的具体推演、代码示意和验证方法。示例未在本网站执行 Android 编译或设备实验。
+
 按定义、结构、运行过程、实现细节、故障与验证逐层阅读。问题顺序由本站编写；文末面经映射只证明相应主题被问过，不代表原帖出现了本篇全部追问。每问下方即为对应讲解。
 
 ## 第 1 问：Snapshot 是什么，StateRecord 保存了什么？
@@ -39,6 +41,36 @@ derivedStateOf 用于派生可观察结果，在输入变化频繁而下游真�
 ## 第 6 问：怎样验证隔离视图、冲突与通知时序？
 
 在隔离测试中创建两个可变快照修改同一 state，记录 apply 结果与不同 policy 的行为；再用两个关联 state 验证批量更新。以上是实验步骤，本知识库未声称已对你的依赖版本运行。
+
+## 第 7 问：StateRecord 为什么需要版本选择，而不是一个全局 value？
+
+设 S0 建立时 x=10，之后另一个修改把全局 x 变为 20。S0 内部若每次都直接读同一全局字段，就失去一致视图。参与 Snapshot 的状态保存带版本信息的记录；读取在当前快照可见性规则下选择可见记录，写入取得合适的可写记录，而不是无条件修改所有读者正在使用的那份值。
+
+源码定位从 SnapshotMutableStateImpl 的 value getter/setter 开始，沿 readable、可写记录获取与策略判断进入 Snapshot 实现。StateObject 是逻辑状态身份，StateRecord 是其值版本，不要把每个记录当独立订阅对象。旧快照不释放会延长版本可访问性，资源生命周期同样重要。[状态实现入口](https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt)。入口链接为开发分支，实验须固定对应依赖版本。
+
+## 第 8 问：冲突可以用一个确定的表格推演吗？
+
+前提：两个顶层可变快照 A、B 在相同初始值 0 上创建，使用默认结构相等策略，无自定义 merge；先在各自快照内写入，再依次 apply。不是并发执行全局的普通 `count++`。
+
+| A 写入 | B 写入 | A 成功应用后 B 的情况 |
+| --- | --- | --- |
+| 1 | 1 | 最终值等价，不应推断自动累计成 2 |
+| 1 | 2 | 出现不兼容写入；无有效合并时 B 报告应用失败 |
+| 只改 x | 只改独立 y | 无其他冲突时可分别应用；仍需检查 x/y 的业务不变量 |
+
+这说明 Snapshot 保存的是状态变更，不记录业务操作“加一次”。若自定义累计合并，需要明确 previous/current/applied 的意义并证明适合业务，不能对任意对象做字段拼接。库存扣减还涉及外部权威数据，UI 合并无法替代服务端事务。[变更策略源码契约](https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotMutationPolicy.kt)。
+
+## 第 9 问：读依赖为什么要随条件分支改变？
+
+原创推演：`if (showPrice) price.value else placeholder.value`。本次执行实际读取 showPrice 和其中一个分支，观察者应记录实际路径。切换 showPrice 后重新执行，依赖集合随新路径调整；若永久保存曾读过的一切，会使已不使用的 price 更新继续造成无意义失效，甚至保留不必要引用。
+
+跟踪读依赖与判定值相等是两件事。派生结果可能仍等于上次值，但其依赖来源已变，不能简单跳过依赖维护。派生状态本身的重新计算、观察范围失效以及最终消费者执行次数，也不是相同计数。验证时分别记录，避免由一次日志倒推整个算法。
+
+## 第 10 问：为什么 Snapshot 不能替代所有锁或事务？
+
+Snapshot 只管理接入它的状态记录，不管理文件句柄、数据库提交或普通对象内部字段。两个有关联的数据若在不同全局写入中暴露，仍可能破坏业务不变量；使用 MutableSnapshot 批量变更，也不保证外部请求失败时能回滚网络世界。
+
+建议在隔离测试中明确创建、enter、apply 和 finally dispose 的顺序，记录 SnapshotApplyResult，而不是忽略失败。重试需要重读当前状态并重新计算，且被重试块不能包含不可重复外部副作用。随后用[阶段文章](#/article/compose-phases)理解观察者怎样把应用通知转成 UI 工作。
 
 ## 原理依据与适用边界
 

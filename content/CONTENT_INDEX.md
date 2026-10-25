@@ -1,6 +1,6 @@
 # 知识正文与面经详解目录
 
-更新：2026-10-07。59 篇学习正文，其中 54 篇采用连续问答；7 份面经的 75 项原帖解答。另保留 25 份辅助资料。
+更新：2026-10-25。69 篇学习正文，其中 64 篇采用连续问答；7 份面经的 75 项原帖解答。另保留 25 份辅助资料。
 
 ## Android 相关技术
 
@@ -112,29 +112,71 @@
 
 ## Compose
 
+十一阶段对应 16 篇正文；[完整学习路径与逐项索引](source/Compose-由浅到深学习路径.md)。
+
 ### 状态与所有权
 
-- [Compose State：remember 记住什么，谁让界面更新](source/lessons/compose-state.md) — 学习文章；面经 + 岗位必修；逐层追问 6 问
+- [Compose State：remember 记住什么，谁让界面更新](source/lessons/compose-state.md) — 学习文章；面经 + 岗位必修；逐层追问 10 问
 
 ### Runtime 与 Snapshot
 
-- [Snapshot 原理：状态版本、读取观察与冲突合并](source/lessons/compose-snapshot.md) — 学习文章；岗位必修；逐层追问 6 问
+- [Snapshot 原理：状态版本、读取观察与冲突合并](source/lessons/compose-snapshot.md) — 学习文章；岗位必修；逐层追问 10 问
 
 ### Runtime 与组合结构
 
-- [组合树与 SlotTable：位置身份怎样保存 remember](source/lessons/compose-slots.md) — 学习文章；岗位必修；逐层追问 6 问
+- [组合树与 SlotTable：位置身份怎样保存 remember](source/lessons/compose-slots.md) — 学习文章；岗位必修；逐层追问 10 问
 
 ### 编译器与稳定性
 
-- [Compose 编译器：IR 变换、changed 标记与强跳过](source/lessons/compose-compiler.md) — 学习文章；岗位必修；逐层追问 6 问
+- [Compose 编译器：IR 变换、changed 标记与强跳过](source/lessons/compose-compiler.md) — 学习文章；岗位必修；逐层追问 10 问
 
 ### 布局绘制与性能
 
-- [Compose 如何刷新：组合、测量、放置与绘制失效](source/lessons/compose-phases.md) — 学习文章；岗位必修；逐层追问 5 问
+- [Compose 如何刷新：组合、测量、放置与绘制失效](source/lessons/compose-phases.md) — 学习文章；岗位必修；逐层追问 9 问
 
 ### 副作用与互操作
 
-- [Compose 副作用与互操作：key、取消、清理与旧闭包](source/lessons/compose-effects.md) — 学习文章；岗位必修；逐层追问 6 问
+- [Compose 副作用与互操作：key、取消、清理与旧闭包](source/lessons/compose-effects.md) — 学习文章；岗位必修；逐层追问 10 问
+
+### 基础与版本
+
+- [Compose 起点：环境、三类结构与源码阅读](source/lessons/compose-foundations.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 组件与设计系统
+
+- [Compose 页面开发：组件、Modifier、主题与 CompositionLocal](source/lessons/compose-components.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 布局与 Modifier
+
+- [Compose 布局：Constraints、测量、放置与 Modifier.Node](source/lessons/compose-layout.md) — 学习文章；岗位必修；逐层追问 7 问
+
+### 绘制与动画
+
+- [Compose 绘制与动画：缓存、图层、帧与中断](source/lessons/compose-graphics-animation.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 手势与输入
+
+- [Compose 输入：手势、嵌套滚动、焦点与 IME](source/lessons/compose-input.md) — 学习文章；岗位必修；逐层追问 7 问
+
+### 列表与复用
+
+- [Compose 列表：Lazy、key、contentType 与分页](source/lessons/compose-lazy.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 性能诊断与治理
+
+- [Compose 性能诊断：从卡顿现场到基准与治理](source/lessons/compose-performance.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 测试与正确性
+
+- [Compose 测试：语义树、同步、动画与恢复](source/lessons/compose-testing.md) — 学习文章；岗位必修；逐层追问 7 问
+
+### 架构与导航
+
+- [Compose 架构与导航：所有权、返回栈与自适应](source/lessons/compose-navigation.md) — 学习文章；岗位必修；逐层追问 6 问
+
+### 互操作与迁移
+
+- [Compose 互操作与迁移：宿主、复用、回滚与证据](source/lessons/compose-interop.md) — 学习文章；岗位必修；逐层追问 6 问
 
 ## AI 相关
 
