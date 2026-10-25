@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: 'refresh=检索生成；enable_auto/disable_auto=自动任务开关；publish=确认发布草稿'
+        description: 'check_model=验证模型；refresh=检索生成；enable_auto/disable_auto=自动任务开关；publish=确认发布草稿'
         type: choice
         default: refresh
-        options: [refresh, enable_auto, disable_auto, publish]
+        options: [check_model, refresh, enable_auto, disable_auto, publish]
       source_url:
         description: '可选：指定中文面经原帖 URL；留空自动检索'
         type: string

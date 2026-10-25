@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import initial from "@/public/update-status.json";
 
-type Run = { at: string; status: string; discovered: number; generated: number; published: number; warnings: string[]; modelConfigured: boolean; runUrl: string | null };
+type Run = { modelCheck?: string; operation?: string; at: string; status: string; discovered: number; generated: number; published: number; warnings: string[]; modelConfigured: boolean; runUrl: string | null };
 type Candidate = { id: string; title: string; url: string; status: string; reason?: string; publishedAt?: string | null; draftId?: string; publishedArticle?: string };
 type Status = { version: string; updated: string; enabled: boolean; scheduleLabel: string; lookbackDays: number; maxDraftsPerRun: number; lastRun: Run | null; candidates: Candidate[] };
 const repo = "https://github.com/CodeReverse/android-lab";
@@ -71,6 +71,7 @@ export default function UpdateCenter() {
       <h2>最近一次任务</h2>
       {status.lastRun ? <>
         <p>{time(status.lastRun.at)} · {labels[status.lastRun.status] || status.lastRun.status}</p>
+        <p>模型配置：{status.lastRun.modelConfigured ? "已识别密钥" : "未配置"}{status.lastRun.modelCheck && ` · 连接检查：${status.lastRun.modelCheck === "success" ? "通过" : "失败"}`}</p>
         <p>检索候选 {status.lastRun.discovered} · 生成草稿 {status.lastRun.generated} · 发布文章 {status.lastRun.published}</p>
         {status.lastRun.warnings.map((w,i)=><p className="small-note" key={i}>{w}</p>)}
         {status.lastRun.runUrl && link(status.lastRun.runUrl,"查看任务日志")}
@@ -90,7 +91,7 @@ export default function UpdateCenter() {
     <section className="settings-section">
       <h2>首次配置与生成规则</h2>
       <p>在仓库 Secrets 中添加 ARTICLE_AI_KEY。默认使用 DeepSeek；其他兼容服务可通过 Variables 设置 ARTICLE_AI_ENDPOINT（完整 chat/completions 地址）和 ARTICLE_AI_MODEL。密钥不会进入网页、文章或个人备份。</p>
-      <p>检索默认使用公开搜索 RSS；如结果不足，可添加 SEARCH_API_KEY 使用 Tavily 检索，或手动指定原帖。模型与搜索服务可能产生费用，额度由对应服务账户控制。</p>
+      <p>配置完成后，在 Run workflow 中选择 check_model 可独立验证模型连接。检索默认使用公开搜索 RSS；如结果不足，可添加 SEARCH_API_KEY 使用 Tavily 检索，或手动指定原帖。模型与搜索服务可能产生费用，额度由对应服务账户控制。</p>
       <div className="button-row">{link(`${repo}/settings/secrets/actions`,"配置密钥与变量")}{link(`${repo}/blob/main/content/UPDATE_RULES.md`,"查看更新与核验规则")}{link(`${repo}/edit/main/content/update-config.json`,"修改来源、范围与数量")}</div>
       <p className="small-note">文章按“定义 → 结构 → 执行 → 底层实现 → 边界 → 验证”展开，原题概述与编辑追问分开。程序检查不等于技术事实核验，草稿需检查引用和版本后再收录。</p>
     </section>

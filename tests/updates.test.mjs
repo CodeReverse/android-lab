@@ -73,13 +73,19 @@ globalThis.fetch=async (u,options)=>{
  if(url.includes('nowcoder.com')) return new Response(f.html);
  if(url.includes('bing.com')) return new Response('<rss><channel><item><title>官方资料</title><link>https://developer.android.com/example</link></item></channel></rss>');
  if(url.includes('developer.android.com')) return new Response(f.refHtml);
- if(url.includes('model.test')) { const data=calls++===0?f.extraction:f.generated;return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(data)}}]}) }
+ if(url.includes('model.test')) { if(process.env.UPDATE_OPERATION==='check_model') return process.env.MOCK_MODEL_FAIL ? new Response('private response must not be logged',{status:401}) : Response.json({choices:[{finish_reason:'stop',message:{content:'{"ok":true}'}}]}); const data=calls++===0?f.extraction:f.generated;return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(data)}}]}) }
  throw Error('Unexpected network request in test');
 };
 `);
   const env={...process.env,ARTICLE_AI_KEY:'test-only-not-real',ARTICLE_AI_ENDPOINT:'',ARTICLE_AI_MODEL:'',SEARCH_API_KEY:'',SOURCE_URL:'https://www.nowcoder.com/test',GITHUB_EVENT_NAME:'workflow_dispatch',UPDATE_OPERATION:'refresh'};
   const run=(overrides={})=>execFileSync(process.execPath,['--import',path.join(dir,'mock.mjs'),path.join(dir,'scripts/updates/run.mjs')],{env:{...env,...overrides},stdio:'pipe'});
   const read=async file=>JSON.parse(await fs.readFile(path.join(dir,file),'utf8'));
+  run({UPDATE_OPERATION:'check_model'});
+  assert.equal((await read('content/updates/state.json')).lastRun.modelCheck,'success');
+  assert.equal((await read('content/updates/state.json')).candidates.length,0);
+  assert.throws(()=>run({UPDATE_OPERATION:'check_model',MOCK_MODEL_FAIL:'1'}));
+  const failed=(await read('content/updates/state.json')).lastRun;
+  assert.equal(failed.status,'failed');assert.equal(failed.modelCheck,'failed');assert.match(failed.warnings[0],/HTTP 401/);assert.ok(!JSON.stringify(failed).includes('private response'));
   run();let state=await read('content/updates/state.json');assert.equal(state.lastRun.generated,1);assert.equal(state.candidates[0].status,'draft');assert.equal((await read('content/articles.json')).length,0);
   run();state=await read('content/updates/state.json');assert.equal(state.lastRun.generated,0);assert.equal(state.candidates.length,1);
   const id=state.candidates[0].id;

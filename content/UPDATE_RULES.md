@@ -8,6 +8,7 @@
 
 | operation | 行为 |
 | --- | --- |
+| check_model | 独立验证模型鉴权与 JSON 输出，无需来源页面；只发出一次简短请求 |
 | refresh | 检索新面经、核验来源、生成文章草稿；source_url 可指定一个原帖 |
 | enable_auto | 开启每周一北京时间 10:17 的后台检索生成 |
 | disable_auto | 关闭自动任务，保留手动更新 |
@@ -22,6 +23,8 @@
 - Secret `ARTICLE_AI_KEY`：模型服务 API Key。默认接口 `https://api.deepseek.com/chat/completions`，模型 `deepseek-flash`。
 - 可选 Variables `ARTICLE_AI_ENDPOINT` 和 `ARTICLE_AI_MODEL`：替换为兼容 Chat Completions + JSON object 输出的接口完整地址和模型名。
 - 可选 Secret `SEARCH_API_KEY`：Tavily 检索 Key。缺省使用公开 Bing RSS；它可能返回无关或不完整结果，会严格按来源域名过滤，不把无结果说成“行业没有新面经”。
+
+配置 Secret 后先运行 `check_model`，成功仅表示模型接口可用，不代表面经来源可读或文章事实已核验。DeepSeek 接口明确使用非思考模式，以保留正文输出额度；其他兼容接口不发送此专用参数。
 
 调用模型和搜索可能计费，每次最多生成两篇草稿（配置上限为三篇）。没有模型密钥时仍可检索和提取网页；来源保留为等待配置，不编造正文。接口失败不输出密钥、完整响应或完整原帖。
 
