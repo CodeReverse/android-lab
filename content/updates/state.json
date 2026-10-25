@@ -1,21 +1,29 @@
 {
   "lastRun": {
-    "at": "2026-10-25T12:41:21.947Z",
-    "operation": "refresh",
-    "status": "needs_attention",
-    "discovered": 4,
+    "at": "2026-10-25T12:42:58.325Z",
+    "operation": "check_model",
+    "status": "success",
+    "discovered": 0,
     "generated": 0,
     "published": 0,
-    "warnings": [
-      "research-eab09585f199e47a：来源访问失败 HTTP 403（不绕过登录或验证）",
-      "research-5a06cd4b08fd6fa8：来源访问失败 HTTP 403（不绕过登录或验证）",
-      "research-6ebc1119013a488a：来源访问失败 HTTP 403（不绕过登录或验证）",
-      "research-9f78baf63e8bf3fb：来源访问失败 HTTP 403（不绕过登录或验证）"
-    ],
+    "warnings": [],
     "modelConfigured": true,
-    "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40194209115"
+    "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40194321455",
+    "modelCheck": "success"
   },
   "history": [
+    {
+      "at": "2026-10-25T12:42:58.325Z",
+      "operation": "check_model",
+      "status": "success",
+      "discovered": 0,
+      "generated": 0,
+      "published": 0,
+      "warnings": [],
+      "modelConfigured": true,
+      "runUrl": "https://github.com/CodeReverse/android-lab/actions/runs/40194321455",
+      "modelCheck": "success"
+    },
     {
       "at": "2026-10-25T12:41:21.947Z",
       "operation": "refresh",
