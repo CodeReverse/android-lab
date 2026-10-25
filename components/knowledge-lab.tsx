@@ -660,7 +660,7 @@ function Lab() {
                   <h2>重新认识 Compose</h2>
                   <p>State → Snapshot → SlotTable → Compiler</p>
                   <div className="feature-bottom">
-                    <span>6 篇机制正文 · 11 阶段复习地图</span>
+                    <span>{new Set(Object.values(learningPaths.compose.stages).flat()).size} 篇学习正文 · {Object.keys(learningPaths.compose.stages).length} 阶段逐项索引</span>
                     <Blocks size={42} />
                   </div>
                 </button>
