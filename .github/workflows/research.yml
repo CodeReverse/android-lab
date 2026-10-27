@@ -64,7 +64,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add content/update-config.json content/updates content/articles.json content/source/lessons content/generated.json public/update-status.json
+          git add content/update-config.json content/updates content/articles.json content/source/lessons content/generated.json content/CONTENT_INDEX.md public/update-status.json
           if ! git diff --cached --quiet; then
             git commit -m 'Update interview research and article drafts'
             git push origin HEAD:main

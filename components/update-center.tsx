@@ -43,7 +43,7 @@ export default function UpdateCenter() {
     <section className="settings-section">
       <span className="kind">面经检索与文章生成</span>
       <h2>从新面经到可学习的文章</h2>
-      <p>检索中文原帖 → 去重与来源核验 → 提取知识点 → 核对官方原理资料 → 逐层问答草稿 → 核验后发布。模型不会自动覆盖已有文章。</p>
+      <p>检索中文原帖 → 去重与来源核验 → 提取知识点 → 核对官方原理资料 → 简洁讲解草稿与文末提炼 → 核验后发布。模型不会自动覆盖已有文章。</p>
       <div className="button-row">
         {link(workflow, "手动更新 / 设置自动任务")}
         <Button variant="outline" onClick={check} disabled={busy}><RefreshCw size={16}/>{busy ? "检查中…" : "检查最新状态"}</Button>
@@ -93,7 +93,7 @@ export default function UpdateCenter() {
       <p>在仓库 Secrets 中添加 ARTICLE_AI_KEY。默认使用 DeepSeek；其他兼容服务可通过 Variables 设置 ARTICLE_AI_ENDPOINT（完整 chat/completions 地址）和 ARTICLE_AI_MODEL。密钥不会进入网页、文章或个人备份。</p>
       <p>配置完成后，在 Run workflow 中选择 check_model 可独立验证模型连接。检索默认使用公开搜索 RSS；如结果不足，可添加 SEARCH_API_KEY 使用 Tavily 检索，或手动指定原帖。模型与搜索服务可能产生费用，额度由对应服务账户控制。</p>
       <div className="button-row">{link(`${repo}/settings/secrets/actions`,"配置密钥与变量")}{link(`${repo}/blob/main/content/UPDATE_RULES.md`,"查看更新与核验规则")}{link(`${repo}/edit/main/content/update-config.json`,"修改来源、范围与数量")}</div>
-      <p className="small-note">文章按“定义 → 结构 → 执行 → 底层实现 → 边界 → 验证”展开，原题概述与编辑追问分开。程序检查不等于技术事实核验，草稿需检查引用和版本后再收录。</p>
+      <p className="small-note">文章按“定义 → 结构 → 执行 → 底层实现 → 边界 → 验证”展开，正文连续讲解，文末附原题对应说明与复习提问。程序检查不等于技术事实核验，草稿需检查引用和版本后再收录。</p>
     </section>
   </div>;
 }

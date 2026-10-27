@@ -438,12 +438,12 @@ function Lab() {
                 </span>
                 <span>{cats.find((c) => c.id === a.category)?.name}</span>
                 {a.type === "学习文章" && <span>{a.topic}</span>}
-                {a.inquiryCount > 0 && <span>逐层追问 · {a.inquiryCount} 问</span>}
+                {a.reviewCount > 0 && <span>文末复习 · {a.reviewCount} 问</span>}
                 <span>{a.minutes} 分钟</span>
               </div>
               <h3>{a.title}</h3>
               <p>{a.summary}</p>
-              {a.type === "学习文章" && <span className="small-note">{a.origin} · {a.inquiryCount > 0 ? "定义 → 机制 → 边界 → 验证" : "学习地图与工程判断"}</span>}
+              {a.type === "学习文章" && <span className="small-note">{a.origin} · {a.sectionCount > 0 ? "概念 → 过程 → 原理 → 边界" : "学习地图与工程判断"}</span>}
               {a.type === "面经详解" && <span className="small-note">{a.company} · {a.interviewDate} · {a.questionCount} 个原帖条目 · {a.role}</span>}
             </button>
             <button
@@ -680,11 +680,11 @@ function Lab() {
                 </button>
               </div>
               <div className="content-overview">
-                <div><strong>{lessons.length} 篇学习文章</strong><span>原理讲解、工程场景、追问支点与验证方法</span></div>
+                <div><strong>{lessons.length} 篇学习文章</strong><span>循序讲解、具体例子、关键边界与文末复习</span></div>
                 <div className="button-row"><button className="text-button" onClick={() => navigate("interviews")}>{interviews.length} 份面经逐题详解 <ChevronRight size={16} /></button><button className="text-button" onClick={() => openArticle("senior-capability-map")}>资深岗位能力地图 <ChevronRight size={16} /></button></div>
               </div>
               <div className="path-intro">
-                <div><span className="kind">逐层追问 · 新专题</span><h2>从基础问题走到实现与故障现场</h2><p>AI 与端侧工程；JVM、JMM、线程、锁、GC、Handler 和 OOM。</p></div>
+                <div><span className="kind">由浅入深 · 技术专题</span><h2>从基础概念读到实现与故障现场</h2><p>AI 与端侧工程；JVM、JMM、线程、锁、GC、Handler 和 OOM。</p></div>
                 <div className="button-row"><Button variant="outline" onClick={() => navigate("paths/ai")}>AI 学习路径</Button><Button variant="outline" onClick={() => navigate("paths/runtime")}>运行时与并发</Button></div>
               </div>
               <div className="section-head">
@@ -1364,7 +1364,7 @@ function ArticleView({
               </span>
               <span>更新 {a.updated} · v{a.version}</span>
               {a.type === "学习文章" && <span>{a.origin}</span>}
-              {a.inquiryCount > 0 && <span>逐层追问 · {a.inquiryCount} 问</span>}
+              {a.reviewCount > 0 && <span>文末复习 · {a.reviewCount} 问</span>}
               <span>{a.minutes} 分钟</span>
             </div>
             <h1>{a.title}</h1>
@@ -1424,7 +1424,7 @@ function ArticleView({
                 ))}
             </div>
           </header>
-          {a.type === "学习文章" && <div className="lesson-context"><strong>本篇学习目标</strong><p>{a.summary}</p><span>含机制讲解、工程推演与逐层追问；实验步骤需在实际项目版本中验证。原理来源与面经映射见文末。</span></div>}
+          {a.type === "学习文章" && <div className="lesson-context"><strong>本篇学习目标</strong><p>{a.summary}</p><span>正文从概念与执行过程深入机制和边界，文末用面试提问提炼重点。实验设计需在实际项目版本中验证。</span></div>}
           {a.type === "面经详解" && <div className="lesson-context"><strong>{a.company} · {a.interviewDate} · {a.questionCount} 个条目</strong><p>{a.role}</p><span>原帖问题与编辑追问分开标注。下文是原创参考解答，不是面试官官方答案，也不虚构候选人经历。</span></div>}
           {progress && progress.version < a.version && <div className="notice-box">正文已更新到 v{a.version}，你记录进度时是 v{progress.version}。原进度与笔记保留，可自行决定是否复习。</div>}
           {a.type === "追问提纲" && (

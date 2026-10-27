@@ -93,29 +93,35 @@ export function validateExtraction(raw, page, categories, config) {
 }
 export const draftSchema=z.object({
   title:z.string().min(8).max(120), summary:z.string().min(30).max(250),
-  sections:z.array(z.object({question:z.string().min(5).max(150),answer:z.string().min(180).max(5000)})).min(6).max(12),
-  answers:z.array(z.object({sourceQuestion:z.number().int().min(1).max(3),answer:z.string().min(180).max(3000)})).min(1).max(3),
+  sections:z.array(z.object({heading:z.string().min(2).max(60),body:z.string().min(100).max(800)})).min(4).max(8),
+  review:z.array(z.object({question:z.string().min(6).max(120),section:z.number().int().min(1).max(8)})).min(3).max(5),
+  answers:z.array(z.object({sourceQuestion:z.number().int().min(1).max(3),answer:z.string().min(80).max(500)})).min(1).max(3),
   references:z.array(z.object({url:z.string().url(),supports:z.string().min(10).max(250)})).min(1).max(5),
-  versionScope:z.string().min(20).max(700), exercise:z.string().min(120).max(1800),
+  versionScope:z.string().min(20).max(700), exercise:z.string().min(80).max(500),
 });
 export function validateDraft(raw, extraction, references) {
   const data=draftSchema.parse(raw);
   const covered=new Set(data.answers.map(x=>x.sourceQuestion));
   if (covered.size!==extraction.questions.length || data.answers.length!==covered.size || [...covered].some(n=>n>extraction.questions.length)) throw Error('面经问题未逐项解答');
   for (const ref of data.references) if (!references.some(r=>r.url===ref.url && r.text.length>=150)) throw Error('引用没有可读原理证据');
-  const generated=[data.title,data.summary,data.versionScope,...data.sections.flatMap(x=>[x.question,x.answer]),...data.answers.map(x=>x.answer),data.exercise].join('\n');
+  const generated=[data.title,data.summary,data.versionScope,...data.sections.flatMap(x=>[x.heading,x.body]),...data.review.map(x=>x.question),...data.answers.map(x=>x.answer),data.exercise].join('\n');
   if (/https?:\/\/|^#{1,2} |<script|javascript:/im.test(generated)) throw Error('正文含未核验链接或非法结构');
-  if (data.sections.reduce((s,x)=>s+x.answer.length,0)<1800) throw Error('正文深度不足');
+  const length=data.sections.reduce((s,x)=>s+x.body.length,0);
+  if(length<900 || length>3200)throw Error('学习正文需在 900–3200 字符内讲清机制，超出时拆篇');
+  if(data.sections.some(x=>/[？?]|第\s*\d+\s*问/.test(x.heading) || /^(?:[QA]：|问：|答：|### .*?[？?])/m.test(x.body)))throw Error('学习正文使用陈述式讲解，问答放在文末');
+  if(data.review.some(x=>x.section>data.sections.length) || new Set(data.review.map(x=>x.question)).size!==data.review.length)throw Error('面试提炼必须去重且对应已存在的小节');
   return data;
 }
 export function renderDraft(id, extraction, data, candidate, now) {
   const esc=s=>s.replace(/[<>]/g,'').replace(/[\r\n]+/g,' ');
   let md=`## 阅读方式与讨论边界\n\n由公开面经选题、AI 辅助生成，尚需技术核验。核验后发布也不等于完成设备实验。采集：${now}；发布时间：${candidate.publishedAt || '未核验'}；面试日期：未独立核验。${esc(data.versionScope)}\n\n`;
-  md+='## 面经问题与对应答案\n\n以下为原题意图概述，非逐字转录；后续连续问答属于编辑设计，不代表公司原题。\n\n';
-  for (const [i,q] of extraction.questions.entries()) md+=`### 原题概述 ${i+1}：${esc(q.summary)}\n\n${data.answers.find(a=>a.sourceQuestion===i+1).answer}\n\n`;
-  for (const [i,s] of data.sections.entries()) md+=`## 第 ${i+1} 问：${esc(s.question)}\n\n${s.answer}\n\n`;
+  for (const [i,s] of data.sections.entries()) md+=`## ${i+1}. ${esc(s.heading)}\n\n${s.body}\n\n`;
   md+=`## 验证设计（未执行）\n\n${data.exercise}\n\n## 原理依据\n\n`;
   for (const r of data.references) md+=`- [原理资料](${r.url})：${esc(r.supports)}\n`;
-  md+=`\n## 面经来源与事实边界\n\n- [原帖](${candidate.url})：${esc(candidate.title)}。${candidate.dateEvidence}。这里只证明主题被提及，不证明本文所有追问都被问过，也不据此计算行业频率。\n`;
+  md+=`\n## 面经来源与事实边界\n\n- [原帖](${candidate.url})：${esc(candidate.title)}。${candidate.dateEvidence}。这里只证明主题被提及，不证明文末提炼均为原题，也不据此计算行业频率。\n`;
+  md+='\n## 原题对应说明\n\n以下是原题意图的概述与简要对应解释，不是逐字转录。\n\n';
+  for (const [i,q] of extraction.questions.entries()) md+=`### ${esc(q.summary)}\n\n${data.answers.find(a=>a.sourceQuestion===i+1).answer}\n\n`;
+  md+='## 面试提炼\n\n以下为本站设计的复习问题，机制与边界见正文。\n\n';
+  for(const [i,q] of data.review.entries())md+=`${i+1}. ${esc(q.question)}（回看第 ${q.section} 节）\n`;
   return {markdown:md,metadata:{id,title:data.title,category:extraction.category,topic:extraction.topic,tags:[extraction.topic,'面经拓展','AI 辅助'],summary:data.summary,file:`lessons/${id}.md`,type:'学习文章',origin:'面经 + 岗位必修',version:1,related:[],sources:data.references.map(r=>({title:r.supports,url:r.url})),evidence:[{title:candidate.title,url:candidate.url,claim:extraction.questions.map(q=>q.summary).join('；')}],updated:now}};
 }

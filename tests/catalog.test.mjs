@@ -95,51 +95,51 @@ test("AI evidence records match selected original items and retain uncertain dat
   assert.match(articles.find((a) => a.id === uncertain.answerArticle).interviewDate, /年份未明确核验/);
 });
 
-test("Compose stages link knowledge points to actual answers with valid question numbers", () => {
+test("Compose stages map knowledge points to existing prose sections", () => {
   const byId = new Map(articles.map((a) => [a.id, a]));
   assert.equal(Object.keys(paths.compose.stages).length, 11);
   for (const [stageId, readings] of Object.entries(paths.compose.stages)) {
     const stage = byId.get(stageId);
-    const mappingRows = [...stage.markdown.matchAll(/^\| [^\n]+ \| \[[^\]]+\]\(#\/article\/([^)]*)\) \| 第 ([\d、–]+) 问 \|$/gm)];
-    assert.ok(mappingRows.length > 0, `${stageId} needs a knowledge-to-answer mapping`);
-    assert.deepEqual(new Set(mappingRows.map((row) => row[1])), new Set(readings));
-    for (const [, id, range] of mappingRows) {
-      const lesson = byId.get(id);
-      assert.equal(lesson?.type, "学习文章", `${id} must be an article, not an outline`);
-      assert.equal(lesson.category, "compose");
-      for (const num of range.match(/\d+/g).map(Number)) {
-        assert.ok(num >= 1 && num <= lesson.inquiryCount, `${stageId} links missing question ${id}/${num}`);
-      }
-      assert.ok(lesson.sources.length > 0, `${id} needs principle sources`);
+    const rows = [...stage.markdown.matchAll(/^\| [^\n]+ \| \[[^\]]+\]\(#\/article\/([^)]*)\) \| 第 ([\d、–]+) 节 \|$/gm)];
+    assert.ok(rows.length > 0, `${stageId} needs a knowledge-to-section mapping`);
+    assert.deepEqual(new Set(rows.map(row => row[1])), new Set(readings));
+    for (const [, id, range] of rows) {
+      const lesson=byId.get(id);
+      assert.equal(lesson.type, "学习文章");assert.equal(lesson.category, "compose");
+      for(const n of range.match(/\d+/g).map(Number))assert.ok(n>=1 && n<=lesson.sectionCount, `${stageId}: ${id}/${n}`);
+      assert.ok(lesson.sources.length > 0);
     }
-  }
-  for (const id of ["compose-foundations", "compose-components", "compose-layout", "compose-graphics-animation", "compose-input", "compose-lazy", "compose-performance", "compose-testing", "compose-navigation", "compose-interop"]) {
-    assert.ok(Object.values(paths.compose.stages).flat().includes(id), `${id} must be reachable from a stage`);
   }
 });
 
-test("technical lessons expose ordered, answered question chains across subjects", () => {
-  const technical = new Set(["android", "network", "languages", "compose", "cross-platform", "ai", "diagnosis", "performance"]);
-  const maps = new Set(["ai-roadmap", "runtime-roadmap"]);
-  for (const a of articles.filter((a) => a.type === "学习文章" && technical.has(a.category) && !maps.has(a.id))) {
-    const questions = [...a.markdown.matchAll(/^## 第 (\d+) 问：([^\n]+)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)];
-    assert.ok(questions.length >= 4, a.id);
-    assert.equal(a.inquiryCount, questions.length);
-    questions.forEach((q, i) => {
-      assert.equal(Number(q[1]), i + 1, a.id);
-      assert.ok(q[3].trim().length >= 60, `${a.id} question ${i + 1} has an answer`);
-      assert.ok(a.toc.some((h) => h.text === `第 ${i + 1} 问：${q[2]}`), `${a.id} question in TOC`);
+test("learning articles use concise prose and end with answerable interview review", () => {
+  for(const a of articles.filter(a=>a.type === "学习文章")) {
+    const [body,review,...rest]=a.markdown.split("## 面试提炼\n");
+    assert.equal(rest.length,0,a.id);assert.ok(review,a.id);
+    assert.ok(!/^## /m.test(review),`${a.id}: review must be last`);
+    assert.ok(!/^## 第 \d+ 问：|^### .*追问/m.test(body),a.id);
+    const questions=[...review.matchAll(/^(\d+)\. (.*)$/gm)];
+    assert.ok(questions.length>=3 && questions.length<=5,a.id);
+    assert.equal(questions.length,a.reviewCount);
+    const sections=[...body.matchAll(/^## (\d+)\. ([^\n]+)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)];
+    assert.equal(sections.length,a.sectionCount);
+    sections.forEach((x,i)=>{
+      assert.equal(Number(x[1]),i+1,a.id);assert.ok(!/[？?]/.test(x[2]),a.id);
+      assert.ok(x[3].trim().length>=60,a.id);
+      assert.ok(a.toc.some(h=>h.text===`${i+1}. ${x[2]}`),a.id);
     });
+    for(const q of questions){
+      const n=q[2].match(/回看第 (\d+) 节/);if(n)assert.ok(Number(n[1])<=sections.length,a.id);
+    }
+    // Sources and tables can be long; constrain the actual numbered explanations.
+    assert.ok(sections.reduce((n,x)=>n+x[3].length,0)<=3800,`${a.id}: split an overlong explanation`);
   }
-  const expected = { "jvm-runtime": "languages", "java-threads": "languages", "java-locks": "languages", "gc-runtime": "languages", "handler": "android", "memory-art": "android", "oom-diagnosis": "diagnosis" };
-  for (const [id, category] of Object.entries(expected)) {
-    const a = articles.find((a) => a.id === id);
-    assert.equal(a.category, category);
-    assert.ok(a.inquiryCount >= 9, id);
-    assert.ok(paths.runtime.core.includes(id));
+  const expected={"jvm-runtime":"languages","java-threads":"languages","java-locks":"languages","gc-runtime":"languages","handler":"android","memory-art":"android","oom-diagnosis":"diagnosis"};
+  for(const [id,category] of Object.entries(expected)){
+    const a=articles.find(a=>a.id===id);assert.equal(a.category,category);assert.ok(a.sectionCount>=9,id);assert.ok(paths.runtime.core.includes(id));
   }
-  assert.ok(searchArticles(articles, "Metaspace").some((a) => a.id === "jvm-runtime"));
-  assert.ok(searchArticles(articles, "happens-before").some((a) => a.id === "jmm-concurrency"));
+  assert.ok(searchArticles(articles,"Metaspace").some(a=>a.id==="jvm-runtime"));
+  assert.ok(searchArticles(articles,"happens-before").some(a=>a.id==="jmm-concurrency"));
 });
 
 test("expanded old articles keep bookmark, note and selected progress IDs", () => {

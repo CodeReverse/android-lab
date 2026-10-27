@@ -53,7 +53,7 @@
     "title": "Compose：从 State 到编译器",
     "category": "compose",
     "overview": "compose-roadmap",
-    "description": "十一阶段逐项对应十六篇学习正文；每个知识点标注文章与问题编号，附官方资料和实验设计。可自由跳读。",
+    "description": "十一阶段对应十六篇学习正文；按小节定位知识点，文末用面试提问复习。可自由跳读。",
     "tracks": []
   },
   "ai": {
@@ -125,10 +125,10 @@
     ]
   },
   "runtime": {
-    "title": "运行时与并发：逐层追问",
+    "title": "运行时与并发：从概念到执行",
     "category": "languages",
     "overview": "runtime-roadmap",
-    "description": "JVM → JMM → 线程与锁 → GC → ART → Handler/OOM；每问附答案，自由跳读。",
+    "description": "JVM → JMM → 线程与锁 → GC → ART → Handler/OOM；先读机制讲解，再用文末问题复习。",
     "core": [
       "jvm-runtime",
       "jmm-concurrency",
@@ -163,7 +163,7 @@
       },
       {
         "title": "继续深入 Kotlin 与系统交互",
-        "description": "协程与 Flow、Binder、ANR 的关联追问",
+        "description": "协程与 Flow、Binder、ANR 的关联机制",
         "articles": [
           "coroutines",
           "flow-state",

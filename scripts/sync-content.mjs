@@ -70,6 +70,8 @@ function add(id, title, category, tags, body, type = "学习指南", summary = "
     html,
     toc,
     inquiryCount: [...body.matchAll(/^## 第 \d+ 问：/gm)].length,
+    sectionCount: [...body.matchAll(/^## \d+\. /gm)].length,
+    reviewCount: [...(body.split("## 面试提炼\n")[1] || "").matchAll(/^\d+\. /gm)].length,
     updated: metadata.updated || "2026-10-06",
     version: metadata.version || 1,
     topic: metadata.topic || "路线与资料",
@@ -151,7 +153,7 @@ for (let n = 2; n <= 12; n++) {
     ],
     body,
     "学习指南",
-    "知识点逐项对应学习正文与问题编号，附原理资料、追问和实验设计。",
+    "知识点逐项对应正文小节，先理解机制，再用文末问题复习。",
     composeMetadata,
   );
 }
@@ -299,10 +301,19 @@ for (const a of articles) {
   for (const linked of a.related) {
     if (!seen.has(linked)) throw Error(`Missing related article ${a.id} -> ${linked}`);
   }
-  if (["学习文章", "面经详解"].includes(a.type) && (!a.topic || !a.sources.length || a.markdown.length < 1200))
+  if (["学习文章", "面经详解"].includes(a.type) && (!a.topic || !a.sources.length || a.markdown.length < 700))
     throw Error(`Incomplete lesson ${a.id}`);
   if (a.type === "面经详解" && (!a.evidence.length || a.questionCount !== [...a.markdown.matchAll(/^## \d+\. /gm)].length))
     throw Error(`Interview answer count mismatch ${a.id}`);
+  if(a.type === "学习文章") {
+    const [body, review, ...rest] = a.markdown.split("## 面试提炼\n");
+    if (!review || rest.length || a.reviewCount < 3 || a.reviewCount > 5 || /^## 第 \d+ 问：/m.test(body))
+      throw Error(`Learning article must end with 3–5 review questions: ${a.id}`);
+    if (/^## /m.test(review)) throw Error(`Review must be the final section: ${a.id}`);
+    const sections=[...body.matchAll(/^## (\d+)\. ([^\n]+)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)];
+    if(sections.some((x,i)=>Number(x[1])!==i+1 || /[？?]/.test(x[2]) || x[3].trim().length<60))
+      throw Error(`Learning sections need ordered explanations: ${a.id}`);
+  }
   const inquiries = [...a.markdown.matchAll(/^## 第 (\d+) 问：[^\n]+\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)];
   if (a.inquiryCount !== inquiries.length || inquiries.some((q, i) => Number(q[1]) !== i + 1 || q[2].trim().length < 60))
     throw Error(`Incomplete or unordered question answers ${a.id}`);
@@ -344,6 +355,15 @@ for (const [key, file] of Object.entries(files))
     path.join(root, "content/source", file),
     path.join(root, "public/documents", `${ids[key]}.md`),
   );
+// Keep the author-facing index aligned with current titles and teaching format.
+let index=`# 知识正文与面经详解目录\n\n更新：${articles.map(a=>a.updated).sort().at(-1)}。${articles.filter(a=>a.type==="学习文章").length} 篇学习正文采用连续讲解与文末面试提炼；明确面经保留逐题答案。\n`;
+for(const category of categories){
+  const items=articles.filter(a=>a.category===category.id && a.sourceFile);
+  if(!items.length)continue;
+  index+=`\n## ${category.name}\n\n`;
+  for(const a of items)index+=`- [${a.title}](source/${a.sourceFile}) — ${a.type}${a.reviewCount?`；文末复习 ${a.reviewCount} 问`:''}\n`;
+}
+fs.writeFileSync(path.join(root,"content/CONTENT_INDEX.md"),index);
 console.log(
   `Content: ${articles.length} entries, ${categories.length} categories, ${algo.length} algorithms`,
 );

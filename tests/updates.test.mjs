@@ -7,7 +7,7 @@ const categories=[{id:'android',hidden:false},{id:'interviews',hidden:true}];
 const page={title:'腾讯 Android 面试',text:'Handler 线程切换怎样实现？'.repeat(30),publishedAt:'2026-10-10'};
 const extraction={company:'腾讯',topic:'Handler',category:'android',questions:[{summary:'解释 Handler 的线程切换过程',quote:'Handler 线程切换怎样实现？'}]};
 const ref={url:'https://developer.android.com/example',text:'a'.repeat(200)};
-function generated(){return {title:'Handler：线程切换与消息队列原理',summary:'这是通过面经问题归纳的原创主题说明，用以说明消息队列和线程切换的学习范围。',versionScope:'具体实现需核对使用的 Android API 版本，实验还没有运行。',answers:[{sourceQuestion:1,answer:'解释线程切换依赖目标线程运行消息循环，调用方只负责入队。'.repeat(10)}],sections:Array.from({length:6},(_,i)=>({question:`第${i}层的具体运行原理是什么？`,answer:'这是机制讲解，说明责任、输入、执行、限制和需要实际验证的条件。'.repeat(12)})),references:[{url:ref.url,supports:'对应解释线程和消息分发的官方契约。'}],exercise:'在固定 Android 版本下设计消息时序实验，分别记录发送线程和处理线程；这里未执行，不提供虚构测量。'.repeat(4)}}
+function generated(){return {title:'Handler：线程切换与消息队列原理',summary:'这是通过面经问题归纳的原创主题说明，用以说明消息队列和线程切换的学习范围。',versionScope:'具体实现需核对使用的 Android API 版本，实验还没有运行。',answers:[{sourceQuestion:1,answer:'解释线程切换依赖目标线程运行消息循环，调用方只负责入队。'.repeat(10)}],sections:Array.from({length:6},(_,i)=>({heading:`执行机制与边界 ${i+1}`,body:'这是机制讲解，说明责任、输入、执行、限制和需要实际验证的条件。'.repeat(12)})),review:[{question:'状态变化如何经过执行链？',section:1},{question:'同步边界如何保证正确性？',section:3},{question:'怎样验证反例和失效条件？',section:6}],references:[{url:ref.url,supports:'对应解释线程和消息分发的官方契约。'}],exercise:'在固定 Android 版本下设计消息时序实验，分别记录发送线程和处理线程；这里未执行，不提供虚构测量。'.repeat(4)}}
 test('update fetch restricts source hosts, schemes, redirects, and payload sizes',async()=>{
  for(const url of ['http://www.nowcoder.com/a','https://nowcoder.com.evil.test/a','https://user:pass@www.nowcoder.com/a','https://127.0.0.1/a'])assert.throws(()=>allowedUrl(url,domains));
  await assert.rejects(()=>fetchPublic('https://www.nowcoder.com/a',domains,async()=>new Response('',{status:302,headers:{location:'http://169.254.169.254/'}})));
@@ -37,10 +37,13 @@ test('generation requires complete answers, sufficient depth and fetched princip
  assert.throws(()=>validateDraft({...good,answers:[]},extraction,[ref]));
  assert.throws(()=>validateDraft({...good,references:[{url:'https://evil.test/doc',supports:'这是未被读取的所谓原理依据'}]},extraction,[ref]));
  assert.throws(()=>validateDraft({...good,sections:good.sections.slice(0,2)},extraction,[ref]));
- const bad=generated();bad.sections[0].answer+='\n## 伪造标题';assert.throws(()=>validateDraft(bad,extraction,[ref]));
+ const bad=generated();bad.sections[0].body+='\n## 伪造标题';assert.throws(()=>validateDraft(bad,extraction,[ref]));
+ const faq=generated();faq.sections[0].heading='什么是消息循环？';assert.throws(()=>validateDraft(faq,extraction,[ref]),/陈述式/);
+ const wrong=generated();wrong.review[0].section=8;assert.throws(()=>validateDraft(wrong,extraction,[ref]),/小节/);
+ const long=generated();long.sections.forEach(x=>x.body='机制'.repeat(350));assert.throws(()=>validateDraft(long,extraction,[ref]),/拆篇/);
  const out=renderDraft('research-0123456789abcdef',extraction,good,{url:'https://www.nowcoder.com/a',title:page.title,publishedAt:null,dateEvidence:'发布时间未核验'},'2026-10-25');
  assert.match(out.markdown,/发布时间：未核验/);assert.match(out.markdown,/验证设计（未执行）/);
- assert.equal([...out.markdown.matchAll(/^## 第 \d+ 问：/gm)].length,6);assert.equal(out.metadata.category,'android');
+ assert.equal([...out.markdown.matchAll(/^## \d+\. /gm)].length,6);assert.equal(out.metadata.category,'android');
 });
 test('topic ownership rules stop coroutine and AI subjects being filed under networking',()=>{
  const p={title:'腾讯面经',text:'协程是什么？'.repeat(60)};
@@ -61,7 +64,7 @@ test('update runner generates, deduplicates and publishes only an explicitly sel
   const put=(name,value)=>fs.writeFile(path.join(dir,name),JSON.stringify(value));
   await put('content/update-config.json',{...config,enabled:false,sourceDomains:domains,principleDomains:['developer.android.com'],queries:['安卓面经'],maxCandidates:3,maxDraftsPerRun:1,model:'test',modelEndpoint:'https://model.test/chat/completions'});
   await put('content/updates/state.json',{lastRun:null,history:[],candidates:[]});
-  await put('content/articles.json',[]);await put('content/categories.json',categories);await fs.writeFile(path.join(dir,'content/ARTICLE_TEMPLATE.md'),'技术正文六层问答，原题与编辑追问分开。');
+  await put('content/articles.json',[]);await put('content/categories.json',categories);await fs.writeFile(path.join(dir,'content/ARTICLE_TEMPLATE.md'),'技术正文连续讲解，文末复习，原题单独标注。');
   const fixture={extraction,generated:generated(),html:`<h1>腾讯面试</h1><article>${page.text}</article>`,refHtml:`<article>${ref.text}</article>`};
   await put('fixtures.json',fixture);
   await fs.writeFile(path.join(dir,'mock.mjs'),`
