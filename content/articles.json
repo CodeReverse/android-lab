@@ -3270,5 +3270,32 @@
     "related": [],
     "sources": [],
     "evidence": []
+  },
+  {
+    "id": "network-syllabus",
+    "title": "网络学习主线：请求过程、客户端实现与失败恢复",
+    "category": "network",
+    "tags": [
+      "DNS",
+      "TCP",
+      "TLS",
+      "HTTP",
+      "OkHttp",
+      "弱网"
+    ],
+    "file": "guides/network-syllabus.md",
+    "type": "学习指南",
+    "summary": "沿请求过程理解协议与客户端，再进入超时、幂等和故障验证。",
+    "version": 2,
+    "updated": "2026-10-27",
+    "related": [
+      "dns-routing",
+      "tcp-tls",
+      "http-cache",
+      "okhttp-chain",
+      "network-reliability"
+    ],
+    "sources": [],
+    "evidence": []
   }
 ]

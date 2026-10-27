@@ -8031,7 +8031,7 @@
     },
     {
       "id": "network-syllabus",
-      "title": "网络全链路：专题学习提纲",
+      "title": "网络学习主线：请求过程、客户端实现与失败恢复",
       "category": "network",
       "tags": [
         "DNS",
@@ -8041,40 +8041,51 @@
         "OkHttp",
         "弱网"
       ],
-      "type": "追问提纲",
-      "summary": "DNS → TCP/TLS → HTTP → OkHttp → 弱网。按链路复习，正文待逐步完善。",
-      "markdown": "## 学习边界\n本篇是待扩充的专题提纲，尚不是经完整源码与实验核验的标准答案。\n\n## 从请求过程组织复习\n1. DNS 解析、缓存和失效。\n2. TCP 建连与连接复用，TLS 身份认证与握手。\n3. HTTP 缓存、连接池、超时、重试与幂等。\n4. OkHttp 调度器、拦截器、连接和取消的边界。\n5. 弱网下的数据一致性与离线恢复。\n\n## 继续追问\n- 一次超时发生在哪一阶段，需要哪些证据？\n- 重试为何可能重复执行服务端操作？\n- UI 退出如何传递取消？如何拒绝过期响应？\n- 如何证明网络优化改善了用户体验？\n\n## 后续核验入口\n- [OkHttp 官方文档](https://square.github.io/okhttp/)\n- [HTTP 语义规范 RFC 9110](https://www.rfc-editor.org/rfc/rfc9110)\n",
-      "html": "<h2 id=\"heading-0\">学习边界</h2><p>本篇是待扩充的专题提纲，尚不是经完整源码与实验核验的标准答案。</p>\n<h2 id=\"heading-1\">从请求过程组织复习</h2><ol>\n<li>DNS 解析、缓存和失效。</li>\n<li>TCP 建连与连接复用，TLS 身份认证与握手。</li>\n<li>HTTP 缓存、连接池、超时、重试与幂等。</li>\n<li>OkHttp 调度器、拦截器、连接和取消的边界。</li>\n<li>弱网下的数据一致性与离线恢复。</li>\n</ol>\n<h2 id=\"heading-2\">继续追问</h2><ul>\n<li>一次超时发生在哪一阶段，需要哪些证据？</li>\n<li>重试为何可能重复执行服务端操作？</li>\n<li>UI 退出如何传递取消？如何拒绝过期响应？</li>\n<li>如何证明网络优化改善了用户体验？</li>\n</ul>\n<h2 id=\"heading-3\">后续核验入口</h2><ul>\n<li><a href=\"https://square.github.io/okhttp/\" target=\"_blank\" rel=\"noopener noreferrer\">OkHttp 官方文档</a></li>\n<li><a href=\"https://www.rfc-editor.org/rfc/rfc9110\" target=\"_blank\" rel=\"noopener noreferrer\">HTTP 语义规范 RFC 9110</a></li>\n</ul>\n",
+      "type": "学习指南",
+      "summary": "沿请求过程理解协议与客户端，再进入超时、幂等和故障验证。",
+      "markdown": "## 1. 从请求链路理解网络\n\n一次请求先取得可用地址，再建立传输和安全会话，随后交换 HTTP 消息。复用已有连接可以省去部分准备过程；业务耗时还包含排队、服务端处理和结果消费。定位问题时先划分阶段，避免把所有延迟归为“网络慢”。\n\n按 [DNS 与路由](#/article/dns-routing) → [TCP 与 TLS](#/article/tcp-tls) 的顺序建立模型，再结合时间线区分解析失败、建连失败和认证失败。\n\n## 2. 从协议语义进入客户端实现\n\n[HTTP 缓存](#/article/http-cache)解释存储、匹配、新鲜度与验证。缓存命中必须先满足表示正确、账号隔离与权限条件；新鲜不代表源站此刻没有更新。\n\n[OkHttp 请求链](#/article/okhttp-chain)把调用、调度、拦截器与连接串起来。结合事件记录区分排队、握手、读写和整体超时；取消任务还需检查底层操作及回调的生命周期。\n\n## 3. 从失败处理进入业务可靠性\n\n客户端超时只说明未在期限内取得预期结果，不能据此断言服务端没有提交。[弱网可靠性](#/article/network-reliability)进一步说明幂等键、重试预算、退避和离线队列：先定义同一业务意图，再决定哪些操作可以安全重试。\n\n练习时固定一个带副作用的场景，推演提交后断流、重复请求和恢复查询。记录实际结果与判断依据，避免用“重试成功”掩盖重复副作用。\n\n## 原理资料\n\n[HTTP 语义 RFC 9110](https://www.rfc-editor.org/rfc/rfc9110)、[OkHttp 官方文档](https://square.github.io/okhttp/)。各篇正文提供具体机制、适用边界与进一步资料；这里是阅读顺序，不是某家公司原题清单。\n\n## 面试提炼\n\n1. 如何判断一次慢请求耗时主要发生在哪个阶段？（回看第 1 节）\n2. 缓存命中和连接复用各减少了什么成本，又受什么条件限制？（回看第 2 节）\n3. 为什么请求超时后不能无条件重试写操作？（回看第 3 节）\n",
+      "html": "<h2 id=\"heading-0\">1. 从请求链路理解网络</h2><p>一次请求先取得可用地址，再建立传输和安全会话，随后交换 HTTP 消息。复用已有连接可以省去部分准备过程；业务耗时还包含排队、服务端处理和结果消费。定位问题时先划分阶段，避免把所有延迟归为“网络慢”。</p>\n<p>按 <a href=\"#/article/dns-routing\">DNS 与路由</a> → <a href=\"#/article/tcp-tls\">TCP 与 TLS</a> 的顺序建立模型，再结合时间线区分解析失败、建连失败和认证失败。</p>\n<h2 id=\"heading-1\">2. 从协议语义进入客户端实现</h2><p><a href=\"#/article/http-cache\">HTTP 缓存</a>解释存储、匹配、新鲜度与验证。缓存命中必须先满足表示正确、账号隔离与权限条件；新鲜不代表源站此刻没有更新。</p>\n<p><a href=\"#/article/okhttp-chain\">OkHttp 请求链</a>把调用、调度、拦截器与连接串起来。结合事件记录区分排队、握手、读写和整体超时；取消任务还需检查底层操作及回调的生命周期。</p>\n<h2 id=\"heading-2\">3. 从失败处理进入业务可靠性</h2><p>客户端超时只说明未在期限内取得预期结果，不能据此断言服务端没有提交。<a href=\"#/article/network-reliability\">弱网可靠性</a>进一步说明幂等键、重试预算、退避和离线队列：先定义同一业务意图，再决定哪些操作可以安全重试。</p>\n<p>练习时固定一个带副作用的场景，推演提交后断流、重复请求和恢复查询。记录实际结果与判断依据，避免用“重试成功”掩盖重复副作用。</p>\n<h2 id=\"heading-3\">原理资料</h2><p><a href=\"https://www.rfc-editor.org/rfc/rfc9110\" target=\"_blank\" rel=\"noopener noreferrer\">HTTP 语义 RFC 9110</a>、<a href=\"https://square.github.io/okhttp/\" target=\"_blank\" rel=\"noopener noreferrer\">OkHttp 官方文档</a>。各篇正文提供具体机制、适用边界与进一步资料；这里是阅读顺序，不是某家公司原题清单。</p>\n<h2 id=\"heading-4\">面试提炼</h2><ol>\n<li>如何判断一次慢请求耗时主要发生在哪个阶段？（回看第 1 节）</li>\n<li>缓存命中和连接复用各减少了什么成本，又受什么条件限制？（回看第 2 节）</li>\n<li>为什么请求超时后不能无条件重试写操作？（回看第 3 节）</li>\n</ol>\n",
       "toc": [
         {
           "id": "heading-0",
-          "text": "学习边界",
+          "text": "1. 从请求链路理解网络",
           "level": 2
         },
         {
           "id": "heading-1",
-          "text": "从请求过程组织复习",
+          "text": "2. 从协议语义进入客户端实现",
           "level": 2
         },
         {
           "id": "heading-2",
-          "text": "继续追问",
+          "text": "3. 从失败处理进入业务可靠性",
           "level": 2
         },
         {
           "id": "heading-3",
-          "text": "后续核验入口",
+          "text": "原理资料",
+          "level": 2
+        },
+        {
+          "id": "heading-4",
+          "text": "面试提炼",
           "level": 2
         }
       ],
       "inquiryCount": 0,
-      "sectionCount": 0,
-      "reviewCount": 0,
-      "updated": "2026-10-06",
-      "version": 1,
+      "sectionCount": 3,
+      "reviewCount": 3,
+      "updated": "2026-10-27",
+      "version": 2,
       "topic": "路线与资料",
       "origin": "参考资料",
-      "related": [],
+      "related": [
+        "dns-routing",
+        "tcp-tls",
+        "http-cache",
+        "okhttp-chain",
+        "network-reliability"
+      ],
       "sources": [],
       "evidence": [],
       "company": "",
@@ -8082,7 +8093,7 @@
       "role": "",
       "questionCount": 0,
       "minutes": 2,
-      "sourceFile": ""
+      "sourceFile": "guides/network-syllabus.md"
     },
     {
       "id": "interview-meituan-2025",

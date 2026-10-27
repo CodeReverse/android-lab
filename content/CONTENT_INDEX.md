@@ -20,6 +20,7 @@
 - [HTTP 缓存：新鲜度、条件请求与账号隔离](source/lessons/http-cache.md) — 学习文章；文末复习 5 问
 - [OkHttp：拦截器、调度、连接池和取消的边界](source/lessons/okhttp-chain.md) — 学习文章；文末复习 5 问
 - [弱网可靠性：超时、重试、幂等与未知结果](source/lessons/network-reliability.md) — 学习文章；文末复习 5 问
+- [网络学习主线：请求过程、客户端实现与失败恢复](source/guides/network-syllabus.md) — 学习指南；文末复习 3 问
 
 ## 跨端技术
 
