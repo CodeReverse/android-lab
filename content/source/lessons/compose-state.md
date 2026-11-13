@@ -4,9 +4,7 @@
 
 ## 1. 从收藏按钮理解状态
 
-这个按钮至少有一份会变化的数据：是否已收藏。按钮文字只是这份数据的显示结果。Compose 中可以把关系理解为 `UI = render(state)`：先确定当前状态，再由它描述当前界面。
-
-下面是一种容易写出的实现。它能表达点击逻辑，却没有建立可观察的数据变化：
+我们先不考虑状态管理框架，只做一个收藏按钮：用布尔值记录是否收藏，根据它显示文字，点击时取反。这很接近写普通 Kotlin 逻辑时的直觉：
 
 ```kotlin
 @Composable
@@ -18,15 +16,56 @@ fun BrokenBookmark() {
 }
 ```
 
-点击会修改闭包捕获的普通变量，但这次修改不会向 Compose 发出状态变更通知。`Text` 不会因为一个任意 Kotlin 变量被赋值就自动得到新参数。假如函数因其他原因重新执行，局部变量又从 `false` 开始。
+点击之后，`starred` 的确被修改了。但这段代码还没有告诉 Compose：这个值变了，需要重新计算使用它的界面。`Text` 上次拿到的是计算好的文字，它不会持续监听所有普通 Kotlin 变量。
 
-这里有两个独立问题：**如何让变化被观察，以及如何让同一个状态对象跨重组保留。** 前者由可观察状态解决，后者需要合适的状态持有者。先把这两件事分开，后面就容易理解 `mutableStateOf` 与 `remember` 的分工。
+我们希望的是“数据改变后，界面按新数据更新”。因此，眼前先要解决的不是怎样修改按钮文字，而是：**如何让 Compose 观察到收藏标记的变化？**
 
-业务层的数据库、网络结果也可以是状态来源，不要求所有数据都放进 Compose 容器；UI 需要在读取边界接入可观察机制。[状态与组合](https://developer.android.com/develop/ui/compose/state)。
+## 2. 用 MutableState 把读写变成可观察操作
 
-## 2. mutableStateOf 与属性委托
+既然普通变量的赋值不会通知 Compose，可以先把布尔值放进它认识的状态容器。负责创建这个容器的函数叫 `mutableStateOf`：
 
-先给收藏标记一个可观察的容器。下面保留 `.value`，把真正发生读写的位置露出来：
+```kotlin
+// 先只观察创建与读写方式；此片段还没有处理重组时的对象保留
+val starredState = mutableStateOf(false)
+
+// 渲染按钮时读取
+val label = if (starredState.value) "已收藏" else "收藏"
+
+// 定义点击回调，实际点击时才写入
+val onClick = { starredState.value = !starredState.value }
+```
+
+这次没有直接给布尔变量赋值，而是读写 `.value`。为什么要多一层？因为普通布尔值只表达 `true/false`；状态容器还提供了供 Compose 跟踪读写的入口。组合执行期间读取它，相关观察机制可以记录依赖；值发生有效变化后，依赖它的工作才能被安排更新。[状态与组合](https://developer.android.com/develop/ui/compose/state)。
+
+这里也就能分清三个容易混用的名字：
+
+| 名字 | 在例子里的角色 |
+| --- | --- |
+| `mutableStateOf(false)` | 创建状态容器的函数调用，初始值是 `false` |
+| `MutableState<Boolean>` | 返回对象的类型，允许读取和修改 `value` |
+| `starredState.value` | 当前保存的布尔值，决定按钮显示什么 |
+
+如果只需要读取，可以通过 `State<Boolean>` 接口暴露这个对象；`MutableState<Boolean>` 在它的基础上开放写入能力。`val starredState` 也不妨碍修改 `.value`，因为 `val` 限制的是变量改指向另一个对象，不是禁止当前对象内部变化。[State](https://developer.android.com/reference/kotlin/androidx/compose/runtime/State)、[MutableState](https://developer.android.com/reference/kotlin/androidx/compose/runtime/MutableState)。
+
+现在把容器放回按钮，先看看只解决“可观察”之后还缺什么：
+
+```kotlin
+@Composable
+fun ResettingBookmark() {
+    val starredState = mutableStateOf(false)
+    Button(onClick = { starredState.value = !starredState.value }) {
+        Text(if (starredState.value) "已收藏" else "收藏")
+    }
+}
+```
+
+按钮能通过状态机制建立依赖了。不过 Compose 更新界面时，可能重新执行有关的组合函数。如果包含 `mutableStateOf(false)` 的创建位置重新执行，这行代码又会创建一个新对象，初值仍然是 `false`。**旧对象的变化可以被观察，却没有人负责让新一轮执行继续使用旧对象。**
+
+这样，下一个需求就出现了：既要让值的变化可观察，又要让创建位置重新执行时取回原来的状态。负责后半件事的就是 `remember`。
+
+## 3. 用 remember 保留状态，再理解 by 的简写
+
+在创建状态的位置加上 `remember`，让 Compose 记住这次计算得到的对象：
 
 ```kotlin
 import androidx.compose.material3.Button
@@ -44,39 +83,11 @@ fun Bookmark() {
 }
 ```
 
-`mutableStateOf(false)` 创建一个 `MutableState<Boolean>`。变量 `starredState` 是容器引用，`.value` 才是里面的布尔值。`val` 限制的是引用重新赋值，因此不妨碍修改容器的 `.value`。
+首次执行到这里时，`remember` 计算 lambda，得到一个初值为 `false` 的状态对象；以后在相同组合位置与身份下重新执行，取回的是之前记住的对象，里面可以已经是点击后写入的 `true`。于是，“重新执行描述界面的代码”不再意味着“把这份数据重新初始化”。
 
-`State<T>` 暴露只读的 `value`，`MutableState<T>` 还允许写入。这里的“只读”是接口能力：即使只拿到 `State<MutableList<T>>`，也不能因此断言里面的列表深度不可变。数据内容的可变性要单独设计。[State](https://developer.android.com/reference/kotlin/androidx/compose/runtime/State)、[MutableState](https://developer.android.com/reference/kotlin/androidx/compose/runtime/MutableState)。
+这里需要保留一个条件：具体哪些作用域重启，受编译结果和读取位置影响。省略 `remember` 的问题是**创建位置再次执行时会重新创建对象**，不能扩大成“任意重组都会重置所有状态”；开发工具也可能直接指出这种错误用法。
 
-同一段使用逻辑也可写为属性委托：
-
-```kotlin
-// 还需 import androidx.compose.runtime.getValue / setValue
-var starred by remember { mutableStateOf(false) }
-// 在组件内读 starred；在点击回调内执行 starred = !starred
-```
-
-此时读取 `starred` 会经过委托的 `getValue`，赋值会经过 `setValue`，最终仍落到状态容器的 `.value`。`by` 是 Kotlin 委托语法，既不创建线程，也不负责重组；省略它、显式读写 `.value` 完全可行。
-
-普通变量也可以编译。是否报委托相关错误，取决于 `by` 右侧对象是否提供合适的操作符，而不是“变量不是 State 就不能声明”。[Kotlin 属性委托](https://kotlinlang.org/docs/delegated-properties.html)。
-
-## 3. remember 保留的是对象身份
-
-把刚才的状态创建改成下面这样：
-
-```kotlin
-@Composable
-fun ResettingBookmark() {
-    val starredState = mutableStateOf(false) // 故意省略 remember
-    Button(onClick = { starredState.value = !starredState.value }) {
-        Text(if (starredState.value) "已收藏" else "收藏")
-    }
-}
-```
-
-它仍创建了可观察状态；但当包含这行创建逻辑的函数重新执行时，会得到新的状态对象，初值又是 `false`。触发哪个作用域重启受编译结果与读取位置影响，因此不要把它描述成“任何重组都一定重置所有状态”。问题在于对象寿命没有被正确管理，工具也可能对此提示错误用法。
-
-`remember` 在当前组合位置及身份有效时复用先前的计算结果。它不是以变量名为键的全局 Map，也不会自动观察普通对象的字段。可以用三种写法分别检查能力：
+反过来，只用 `remember` 保存普通对象行不行？它可以保留对象，但不会替普通字段增加变更通知。把几种写法并列起来，就能看清二者为什么常常配合：
 
 | 写法 | 内容变化能否被 Compose 观察 | 创建位置再次执行时 |
 | --- | --- | --- |
@@ -84,11 +95,23 @@ fun ResettingBookmark() {
 | `remember { 普通可变对象 }` | 普通字段变化仍不会通知 | 在相同身份下复用对象 |
 | `remember { mutableStateOf(...) }` | 状态值的有效变化可被观察 | 在相同身份下复用状态对象 |
 
-离开组合后，普通 `remember` 不承诺继续保留；重新进入同一业务页面，也不等于恢复原来的组合实例。反过来，若状态已由 ViewModel 等外部持有者管理，UI 不应再用 `remember` 创建一份业务状态副本。[组合身份与生命周期](https://developer.android.com/develop/ui/compose/lifecycle)。
+到这里已经可以解释完整写法了，再看常见的简写就不需要同时猜三个 API 的作用：
+
+```kotlin
+// 还需 import androidx.compose.runtime.getValue / setValue
+var starred by remember { mutableStateOf(false) }
+// 在组件内读 starred；在点击回调内执行 starred = !starred
+```
+
+`by` 是 Kotlin 属性委托。读 `starred` 经过 `getValue`，写它经过 `setValue`，最终仍访问状态容器的 `.value`。它省去了显式写 `.value`，没有替换状态机制，也不负责记忆对象。右侧必须提供合适的委托操作符，但普通变量本身并非不能编译。[Kotlin 属性委托](https://kotlinlang.org/docs/delegated-properties.html)。
+
+`remember` 的保留范围也有限：它依附组合身份，离开组合后不承诺继续保留，更不是按变量名保存的全局 Map。如果状态已经由 ViewModel 等外部持有者管理，也不应再在 UI 中复制一份。[组合身份与生命周期](https://developer.android.com/develop/ui/compose/lifecycle)。
+
+现在按钮既有可观察的值，又能保留同一个状态对象。还剩一个疑问：我们没有手动注册监听器，Compose 到底怎样知道这个值影响了哪一块界面？
 
 ## 4. 一次点击如何变成界面变化
 
-现在沿修正后的按钮走一遍。首次执行时，组合读取 `starredState.value` 来决定文字；Compose 会在相应观察范围内记录这次读取。点击回调把值从 `false` 写成 `true`，状态系统处理变化，依赖它的工作随后被安排更新。
+线索就在前面反复出现的 `.value` 读取上。首次描述按钮时，组合读取它来决定文字，Compose 在相应观察范围内记下这次依赖。点击写入新值之后，状态系统就可以通知依赖它的工作，而不需要业务代码再为 Text 注册一个独立监听器。沿同一个按钮走一遍：
 
 ```text
 首次读取 false → 当前范围建立读依赖 → 显示“收藏”
@@ -104,9 +127,9 @@ fun ResettingBookmark() {
 
 ## 5. 从有状态按钮到共享状态
 
-目前 `Bookmark` 自己保存收藏标记，属于有状态组件。需求增加：页面标题和底部按钮都要展示同一篇文章的收藏状态。如果它们各自维护一个布尔值，就出现了两份可能不一致的事实。
+单个按钮的更新过程已经清楚了。现在页面顶部也要显示“这篇文章是否已收藏”，底部还要再放一个收藏按钮。如果把刚才的 `Bookmark` 调用两次，每个实例会管理自己的状态；点了其中一个，另一个并不会因此共享那次修改。问题从“变化怎样被观察”变成了“几个组件应该观察谁保存的同一份数据”。
 
-先让按钮只接收当前值和更新事件：
+与其让两个按钮互相同步各自的布尔值，不如只保留一份状态，把当前值传给它们。按钮不再决定状态存在哪里，只把用户的修改意图交回所有者：
 
 ```kotlin
 @Composable
@@ -138,7 +161,7 @@ fun ArticleScreen() {
 
 ## 6. 集合更新必须穿过可观察边界
 
-把收藏按钮扩展为收藏列表时，常见问题是列表已经改了，界面却没变：
+共享一个布尔值已经能正常工作，于是我们继续增加“收藏列表”，把同样的思路用于列表对象。但这次即使用了 `remember` 和 `mutableStateOf`，下面的添加操作仍可能没有触发预期更新：
 
 ```kotlin
 // 在 Composable 内创建；假设 rows 用于渲染列表
@@ -147,9 +170,9 @@ var rows by remember { mutableStateOf(mutableListOf("文章 A")) }
 rows.add("文章 B")
 ```
 
-这里改的是普通列表内部结构，没有调用外层 `MutableState.value` 的 setter。即使之后再把同一个列表赋回去，等价判断也未必把它视为新值；`by` 不会拦截对象内部的每个方法。
+回到按钮例子：点击时走的是 `starredState.value = ...`。这里的 `rows.add(...)` 却只改普通列表内部结构，没有调用外层 `MutableState.value` 的 setter。即使之后再把同一个列表赋回去，等价判断也未必把它视为新值；`by` 不会拦截对象内部的每个方法。
 
-一种做法是使用按值替换的列表：
+要修复它，先让这次变化重新经过状态赋值。用新的列表替换旧列表，就能明确表达新的值：
 
 ```kotlin
 var rows by remember { mutableStateOf(listOf("文章 A")) }
@@ -157,7 +180,7 @@ var rows by remember { mutableStateOf(listOf("文章 A")) }
 rows = rows + "文章 B"
 ```
 
-另一种是让列表结构本身可观察：
+如果业务更适合直接添加、删除列表项，也可以把观察能力放到列表结构本身，而不是要求每次替换外层值：
 
 ```kotlin
 val rows = remember { mutableStateListOf("文章 A") }
@@ -165,11 +188,11 @@ val rows = remember { mutableStateListOf("文章 A") }
 rows.add("文章 B")
 ```
 
-两种方式的共同点是让变化经过可观察机制。后者也不会把元素的任意字段变成可观察字段。如果元素是 `data class Row(var starred: Boolean)`，直接修改 `rows[0].starred` 仍需额外设计。更容易推演的方式是不可变元素配合替换，或明确让元素属性自身成为状态。列表很大时，再根据更新频率与性能证据选择结构。[集合可观察性说明](https://developer.android.com/develop/ui/compose/state)。
+两种方式的共同点是让变化经过可观察机制。后者也不会把元素的任意字段变成可观察字段。如果元素是 `data class Row(var starred: Boolean)`，直接修改 `rows[0].starred` 仍需额外设计。更容易推演的方式是不可变元素配合替换，或明确让元素属性自身成为状态。通过 `State<MutableList<T>>` 暴露只读的 value，也不会让里面的列表深度不可变。列表很大时，再根据更新频率与性能证据选择结构。[集合可观察性说明](https://developer.android.com/develop/ui/compose/state)。
 
 ## 7. 把 ViewModel 和其他数据源接到 UI
 
-收藏最终属于业务数据时，UI 只负责提出变更意图。下面的内存版 ViewModel 展示接口划分，真实收藏还需接入仓储、失败处理和持久化：
+到目前为止，收藏数据都由页面自己创建。真实应用里，收藏可能来自数据库，还需要和服务端同步；让每个页面自己维护一份列表就不合适了。状态提升因此可以继续越过 UI 组件，交给处理页面业务的 ViewModel。新的问题是：业务层如果用 StateFlow 输出状态，Compose 怎样继续观察它？先看这段内存版示例，仓储、失败处理与持久化暂不展开：
 
 ```kotlin
 data class BookmarkUiState(val starred: Boolean = false)
@@ -192,11 +215,11 @@ fun BookmarkRoute(model: BookmarkViewModel) {
 
 这里需引入 Lifecycle 的 `ViewModel`、`collectAsStateWithLifecycle`，以及 `kotlinx.coroutines.flow` 中的相关类型和操作符。Route 接收已有 ViewModel；宿主负责提供正确作用域，不能在每次组合时手动 `BookmarkViewModel()`。
 
-`StateFlow` 保留最新状态，`collectAsStateWithLifecycle` 负责把收集结果桥接成 Compose 可观察状态。业务层可以独立于 UI；只读的 `StateFlow` 接口限制外部赋值，但不等于把所有载荷自动深拷贝成不可变对象。
+关键变化在 Route：它没有重新创建业务状态，而是通过 `collectAsStateWithLifecycle` 收集 StateFlow，并把结果桥接成 Compose 可观察状态。StateFlow 保留最新状态，UI 仍沿前面学过的“读取状态 → 建立依赖 → 响应变化”工作。业务层可以独立于 UI；只读的 `StateFlow` 接口限制外部赋值，但不等于把所有载荷自动深拷贝成不可变对象。
 
-Android 页面通常使用生命周期感知的桥接。默认活跃阈值为 `STARTED`；低于阈值时暂停当前收集。普通 `collectAsState` 与组合生命周期绑定，却不自动等同于按 Android `STARTED/STOPPED` 控制收集。**消费者停止，也不保证生产者停止**：应用作用域中的热流可能继续生产，上游是否停止取决于作用域、订阅者与共享策略。
+桥接解释了数据怎样到达 UI，但页面进入后台后还要不要继续收集？这正是此处选择生命周期感知 API 的原因。默认活跃阈值为 `STARTED`；低于阈值时暂停当前收集。普通 `collectAsState` 与组合生命周期绑定，却不自动等同于按 Android `STARTED/STOPPED` 控制收集。**消费者停止，也不保证生产者停止**：应用作用域中的热流可能继续生产，上游是否停止取决于作用域、订阅者与共享策略。
 
-已有项目还可能使用其他数据源，不必为了接入 Compose 立即重写全部业务：
+同样的桥接思路可以用于既有数据层。来源换成 LiveData 或 RxJava 时，需要替换的是接入方式，不必为了显示一个 Compose 页面先重写全部业务：
 
 | 输入 | 常用桥接 | 对应依赖 |
 | --- | --- | --- |
@@ -209,7 +232,7 @@ Android 页面通常使用生命周期感知的桥接。默认活跃阈值为 `S
 
 ## 8. 区分重组保留、重建恢复和持久化
 
-现在加入文章搜索框。输入一半后旋转屏幕，用户希望搜索词还在。普通 `remember` 保留的是当前组合中的对象，Activity 重建后通常会重新建立组合，不能靠它恢复原输入。
+现在数据已经能够从业务层流到页面。再试一个用户操作：在收藏列表上方输入搜索词，然后旋转屏幕。若搜索词只放在普通 `remember` 中，Activity 重建后通常会创建新组合，刚才的输入无法仅靠旧组合中的记忆恢复。前面解决了“函数重新执行时保留对象”，这次需要的是“原来的界面对象不在了，还能重建出必要的数据”。搜索词这种小值可以交给 `rememberSaveable`：
 
 ```kotlin
 @Composable
@@ -233,7 +256,7 @@ fun ArticleQuery() {
 
 ## 9. 自定义 Saver 与保存边界
 
-假设搜索页不仅有文本，还可以“只看收藏”。先把它建模为一个小值对象，再定义其保存表示：
+搜索词是简单字符串，保存方式比较直接。接着加入“只看收藏”开关，并把两个条件组织成一个 `ArticleFilter`，保存机制还能自动理解这个业务对象吗？不能仅凭它是 data class 就作此保证。我们可以明确告诉保存系统：这个对象只需保存哪几个值，又怎样从这些值恢复。承担这项转换的就是 Saver：
 
 ```kotlin
 data class ArticleFilter(val query: String, val starredOnly: Boolean)
@@ -253,11 +276,11 @@ var filter by rememberSaveable(stateSaver = ArticleFilterSaver) {
 
 这个示例假设保存结构没有跨版本变化。正式代码还需要定义旧表示不兼容时的默认值或迁移方式；不要把索引和强制类型转换当作无条件安全的通用反序列化。
 
-另外两个名字解决不同层面的问题：`SaveableStateHolder` 可按身份保存离开组合的子内容中的可保存状态，适合需要稍后恢复的子树；`SavedStateHandle` 则是 ViewModel 的保存状态入口。前者需要清理永久移除项，后者适合存 ID、搜索词等重建线索。它们都不能因为名称含有 State 就互相替换。[保存 API 的选择](https://developer.android.com/develop/ui/compose/state-saving)。
+Saver 解决了“怎么表示这个值”，但还没有决定“由哪一层保存、以什么身份找回”。遇到后面两个 API 时，可以沿这两个剩余问题来区分：`SaveableStateHolder` 可按身份保存离开组合的子内容中的可保存状态，适合需要稍后恢复的子树；`SavedStateHandle` 则是 ViewModel 的保存状态入口。前者需要清理永久移除项，后者适合存 ID、搜索词等重建线索。它们都不能因为名称含有 State 就互相替换。[保存 API 的选择](https://developer.android.com/develop/ui/compose/state-saving)。
 
 ## 10. 计算 key 与组合身份
 
-从文章 A 切换到文章 B 时，临时草稿不应无条件沿用 A 的内容。下面的 key 用于控制一个记忆值何时重新计算：
+能保存和恢复值之后，还要确认恢复的是不是当前业务项的状态。例如从文章 A 切换到文章 B，若两者使用同一编辑位置，不能把 A 的临时草稿直接当作 B 的草稿。回到 `remember`，我们还可以为一个记忆计算提供输入：
 
 ```kotlin
 var draft by remember(articleId) { mutableStateOf("") }
@@ -265,7 +288,7 @@ var draft by remember(articleId) { mutableStateOf("") }
 
 在当前位置，`articleId` 改变会让这次记忆计算重新进行。它表达的是缓存计算的输入关系，不会把 A 的草稿自动存进可随时取回的全局字典。切回 A 若要找回旧草稿，还需设计相应持有者或持久存储。
 
-列表中的身份则作用于一块组合内容：
+这解决的是一个记忆值的重新计算。再把场景扩大：列表里的 A、B 调换位置，每个编辑器中还有草稿、焦点和副作用，它们应当一起跟随原来的文章。此时需要表达整块内容的业务身份：
 
 ```kotlin
 // 概念片段：ArticleEditor 是业务组件，articles 的 ID 在同组内唯一
@@ -282,7 +305,7 @@ Column {
 
 ## 11. 用搜索收藏页确定状态归属
 
-把前面的零件放回同一个页面，可以先列出下面的归属表，再写组件代码。这样能避免 UI、ViewModel 和数据库各保存一份可独立修改的“真相”。
+一路走来，我们已经能观察变化、共享数据、接入业务来源，并按身份恢复小状态。回到最初的搜索收藏页，下一步就不再是挑一个万能 API，而是逐项判断：谁有权修改这份数据，它需要活多久，丢失后应该怎样找回。把这些判断放进同一张表，才能避免 UI、ViewModel 和数据库各自维护一份可独立修改的“真相”。
 
 | 数据 | 建议权威来源 | 重建时的策略 |
 | --- | --- | --- |
@@ -299,7 +322,7 @@ Column {
 
 ## 12. 沿状态读写深入 Runtime
 
-前面使用的是 API 契约。继续深入时，应把“保存对象”“读取值”“观察变化”“执行 UI 工作”拆开。`remember` 解决对象在组合中的保留；状态值的读写由 Snapshot 体系管理；组合观察与调度把变化转成相应工作。
+页面层的职责已经串起来了，但最开始的解释仍留下一个黑盒：`.value` 为什么能够被观察，写入后又怎样传播变化？现在可以回到那一行 `mutableStateOf(false)`，沿实现继续往下看。先把 `remember` 放在一边——它负责保留对象；我们这次追的是这个对象内部怎样读写值，以及观察方怎样得知变化。
 
 下面是阅读源码时的职责导图，不是可编译代码，也不是逐字源码：
 
@@ -320,15 +343,15 @@ UI 观察方
   → 标记有关范围失效 → 调度必要工作 → 应用变更
 ```
 
-一个逻辑 State 不必只有一份供所有快照直接覆盖的全局值。`StateRecord` 承载值的版本；可变快照中的写入还涉及应用与冲突，不能把“写入记录”直接等同于“所有观察者已看到最终结果”。本篇核对的 [SnapshotState.kt 固定提交](https://github.com/androidx/androidx/blob/7ac433e44e797de53af85226797862687f37735f/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt) 中，值读取、等价判断和记录写入是不同步骤；该提交是阅读基线，不宣称与你的依赖版本一致。
+导图里多出了 `StateRecord`。为什么不直接在一个全局字段上读写？因为不同快照可能需要看到不同版本的值，一个逻辑 State 不必只对应一份可被所有人直接覆盖的值。`StateRecord` 承载这些值版本；可变快照中的写入还涉及应用与冲突，不能把“写入记录”直接等同于“所有观察者已看到最终结果”。本篇核对的 [SnapshotState.kt 固定提交](https://github.com/androidx/androidx/blob/7ac433e44e797de53af85226797862687f37735f/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt) 中，值读取、等价判断和记录写入是不同步骤；该提交是阅读基线，不宣称与你的依赖版本一致。
 
-默认 `structuralEqualityPolicy` 按结构相等判断等价；`referentialEqualityPolicy` 关注引用身份，`neverEqualPolicy` 不把两次值判为等价。这些策略影响变更与快照合并语义，不会修复错误的状态所有权。尤其普通列表被原地修改而没有走 setter 时，改 policy 也不会凭空观察那次内部操作。
+再看写入入口：即使走到了 setter，也不必然传播一次有效变化。第 4 节中“重复写入 true”的现象，就与这里的等价策略对应。默认 `structuralEqualityPolicy` 按结构相等判断等价；`referentialEqualityPolicy` 关注引用身份，`neverEqualPolicy` 不把两次值判为等价。这些策略影响变更与快照合并语义，不会修复错误的状态所有权。尤其普通列表被原地修改而没有走 setter 时，改 policy 也不会凭空观察那次内部操作。
 
 业务上的“加一次”“保存到服务器”也不是 Snapshot 自动理解的意图。两个快照各把 0 写为 1，不能假定最终自动累计成 2；文件写入、网络提交更不属于 UI 快照事务。到这里再继续读 [Snapshot](#/article/compose-snapshot)、[重组阶段](#/article/compose-phases) 和[编译器](#/article/compose-compiler)，每个底层机制都有对应的上层行为可供核对。
 
 ## 13. 用对照验证理解
 
-理解 State 不只看一个按钮能否点击。下面每个对照只改一个因素，便于把现象对应到机制；它们是验证设计，尚未执行。
+现在可以回头检验最初的按钮了：我们不仅知道应当写哪一行，也能分别解释观察、保留、共享、恢复和快照。要确认这些解释不是靠例子刚好正常工作，每次只改变一个条件，再预测结果。下面把沿途遇到的疑问转成对照验证；这些设计尚未执行。
 
 | 对照 | 应观察的内容 | 能验证的判断 |
 | --- | --- | --- |

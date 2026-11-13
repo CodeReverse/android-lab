@@ -442,7 +442,7 @@
     "file": "lessons/compose-state.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 6,
+    "version": 7,
     "related": [
       "compose-snapshot",
       "compose-slots",
