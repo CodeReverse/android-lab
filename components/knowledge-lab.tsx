@@ -44,6 +44,9 @@ import {
   Archive,
   RotateCcw,
   ChevronRight,
+  PanelRightClose,
+  PanelRightOpen,
+  Minimize2,
 } from "lucide-react";
 import {
   SidebarProvider,
@@ -201,13 +204,30 @@ function download(name: string, data: string, type = "application/json") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export default function KnowledgeLab() {
+  const [readingMode, setReadingMode] = useState(false);
   return (
-    <SidebarProvider>
-      <Lab />
+    <SidebarProvider
+      open={readingMode ? false : undefined}
+      onOpenChange={readingMode ? () => setReadingMode(false) : undefined}
+    >
+      <Lab readingMode={readingMode} setReadingMode={setReadingMode} />
     </SidebarProvider>
   );
 }
-function Lab() {
+function Lab({ readingMode, setReadingMode }: {
+  readingMode: boolean;
+  setReadingMode: Dispatch<SetStateAction<boolean>>;
+}) {
+  const [outlineOpen, setOutlineOpen] = useState(() => {
+    try { return localStorage.getItem("android-lab.toc-open") !== "false"; }
+    catch { return true; }
+  });
+  const toggleOutline = () => {
+    const next = !outlineOpen;
+    setOutlineOpen(next);
+    try { localStorage.setItem("android-lab.toc-open", String(next)); }
+    catch { /* The control still works when browser storage is unavailable. */ }
+  };
   const [state, setState] = useState<LabState>(initialState);
   const [ready, setReady] = useState(false),
     [storageError, setStorageError] = useState(""),
@@ -239,6 +259,12 @@ function Lab() {
   const article = route.startsWith("article/")
     ? articles.find((a) => a.id === route.slice(8))
     : undefined;
+  useEffect(() => {
+    if (!article || query) setReadingMode(false);
+  }, [article, query, setReadingMode]);
+  useEffect(() => {
+    if (readingMode) setOpenMobile(false);
+  }, [readingMode, setOpenMobile]);
   const navigate = (target: string) => {
     location.hash = `/${target}`;
     setQuery("");
@@ -545,9 +571,9 @@ function Lab() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="topbar">
+        <header className={`topbar ${article && !query ? "reader-topbar" : ""}`}>
           <div className="breadcrumb">
-            <SidebarTrigger />
+            <SidebarTrigger onClick={() => setReadingMode(false)} />
             <button onClick={() => navigate("home")}>知识空间</button>
             <span>/</span>
             <strong>
@@ -555,7 +581,37 @@ function Lab() {
             </strong>
           </div>
           <div className="top-actions">
-            <button className="top-search" onClick={() => setSearchOpen(true)}>
+            {article && !query && (
+              <>
+                <Button
+                  variant={readingMode ? "secondary" : "ghost"}
+                  size="sm"
+                  className="reading-mode-toggle"
+                  aria-pressed={readingMode}
+                  title={readingMode ? "退出阅读模式，恢复两侧布局" : "阅读模式：隐藏两侧导航"}
+                  onClick={() => setReadingMode((value) => !value)}
+                >
+                  {readingMode ? <Minimize2 size={16} /> : <BookOpen size={16} />}
+                  {readingMode ? "退出阅读" : "阅读模式"}
+                </Button>
+                {!readingMode && (
+                  <Button
+                    id="toggle-article-toc"
+                    className="desktop-toc-toggle"
+                    variant="ghost"
+                    size="sm"
+                    aria-expanded={outlineOpen}
+                    aria-controls="article-toc"
+                    title={outlineOpen ? "收起右侧目录" : "展开右侧目录"}
+                    onClick={toggleOutline}
+                  >
+                    {outlineOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+                    {outlineOpen ? "收起目录" : "展开目录"}
+                  </Button>
+                )}
+              </>
+            )}
+            <button className="top-search" aria-label="搜索知识库" onClick={() => setSearchOpen(true)}>
               <Search size={17} />
               搜索知识点、源码符号…<kbd>⌘ K</kbd>
             </button>
@@ -569,7 +625,7 @@ function Lab() {
           </div>
         </header>
         <main
-          className={`workspace ${article && !query ? "reading-workspace" : ""}`}
+          className={`workspace ${article && !query ? "reading-workspace" : ""} ${readingMode && article && !query ? "reader-focus" : ""}`}
         >
           {storageError && (
             <div className="warning" role="alert">
@@ -642,6 +698,9 @@ function Lab() {
           ) : article ? (
             <ArticleView
               article={article}
+              showOutline={outlineOpen && !readingMode}
+              readingMode={readingMode}
+              toggleOutline={toggleOutline}
               state={state}
               setState={setState}
               bookmarked={bookmarked(article)}
@@ -1314,6 +1373,9 @@ function SettingRow({
 }
 function ArticleView({
   article: a,
+  showOutline,
+  readingMode,
+  toggleOutline,
   state,
   setState,
   bookmarked,
@@ -1324,6 +1386,9 @@ function ArticleView({
   openArticle,
 }: {
   article: Article;
+  showOutline: boolean;
+  readingMode: boolean;
+  toggleOutline: () => void;
   state: LabState;
   setState: Dispatch<SetStateAction<LabState>>;
   bookmarked: boolean;
@@ -1334,6 +1399,7 @@ function ArticleView({
   openArticle: (id: string) => void;
 }) {
   const [tocOpen, setTocOpen] = useState(false);
+  useEffect(() => { setTocOpen(false); }, [a.id, readingMode]);
   const progress = state.progress[a.id];
   const pathReadings = Object.values(readingPaths).flatMap((path) => path.stages[a.id] || []);
   const relatedIds = [...new Set([...pathReadings, ...a.related])];
@@ -1353,7 +1419,7 @@ function ArticleView({
         <span>/</span>
         <span>{a.type}</span>
       </div>
-      <div className="reader-layout">
+      <div className={`reader-layout ${showOutline ? "" : "without-outline"}`}>
         <article className="reader-main">
           <header className="article-header">
             <div className="article-meta">
@@ -1434,19 +1500,22 @@ function ArticleView({
           )}
           <button
             className="mobile-toc text-button"
+            aria-expanded={tocOpen}
+            aria-controls="inline-article-toc"
             onClick={() => setTocOpen(!tocOpen)}
           >
             本篇目录 {tocOpen ? "收起" : "展开"}
           </button>
-          {tocOpen && (
-            <nav className="inline-toc">
+          <nav id="inline-article-toc" className="inline-toc" hidden={!tocOpen} aria-label="本篇目录">
               {a.toc.filter((t) => a.type !== "面经详解" || t.level === 2).map((t) => (
-                <button key={t.id} onClick={() => scroll(t.id)}>
+                <button key={t.id} onClick={() => {
+                  setTocOpen(false);
+                  requestAnimationFrame(() => scroll(t.id));
+                }}>
                   {t.text}
                 </button>
               ))}
-            </nav>
-          )}
+          </nav>
           <div className="prose" dangerouslySetInnerHTML={{ __html: a.html }} />
           <section className="note-panel">
             <div className="section-head">
@@ -1500,8 +1569,25 @@ function ArticleView({
             ))}
           </section>
         </article>
-        <aside className="reader-toc">
-          <span>本篇目录</span>
+        <aside id="article-toc" className="reader-toc" hidden={!showOutline} aria-label="本篇目录">
+          <div className="toc-header">
+            <span>本篇目录</span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="收起右侧目录"
+              aria-expanded={showOutline}
+              aria-controls="article-toc"
+              title="收起右侧目录"
+              onClick={() => {
+                toggleOutline();
+                document.getElementById("toggle-article-toc")?.focus({ preventScroll: true });
+              }}
+            >
+              <PanelRightClose size={16} />
+            </Button>
+          </div>
+          <nav className="toc-links" aria-label="文章章节">
           {a.toc
             .filter((t) => a.type === "面经详解" ? t.level === 2 : t.level <= 3)
             .map((t) => (
@@ -1513,6 +1599,7 @@ function ArticleView({
                 {t.text.replace(/^\d+\. /, "")}
               </button>
             ))}
+          </nav>
           <div className="toc-note">
             <BookOpen size={18} />
             <p>自由跳读，无需按顺序完成。</p>
