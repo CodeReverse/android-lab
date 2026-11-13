@@ -13,7 +13,7 @@
     "file": "lessons/binder.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "anr-diagnosis"
     ],
@@ -38,7 +38,7 @@
         "claim": "涉及 Binder 通信机制。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "state-restoration",
@@ -54,7 +54,7 @@
     "file": "lessons/state-restoration.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "offline-data",
       "compose-state"
@@ -76,7 +76,7 @@
         "claim": "涉及 Activity/Fragment 生命周期与通信；本文扩展到恢复正确性。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "view-rendering",
@@ -92,7 +92,7 @@
     "file": "lessons/view-rendering.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "performance-proof",
       "compose-phases"
@@ -118,7 +118,7 @@
         "claim": "涉及 View 绘制与渲染。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "dns-routing",
@@ -134,7 +134,7 @@
     "file": "lessons/dns-routing.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "tcp-tls",
       "okhttp-chain"
@@ -154,7 +154,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "tcp-tls",
@@ -170,7 +170,7 @@
     "file": "lessons/tcp-tls.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "http-cache",
       "network-reliability"
@@ -196,7 +196,7 @@
         "claim": "涉及 TCP 可靠性、握手与关闭。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "http-cache",
@@ -212,7 +212,7 @@
     "file": "lessons/http-cache.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "offline-data"
     ],
@@ -237,7 +237,7 @@
         "claim": "涉及 OkHttp 缓存策略。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "okhttp-chain",
@@ -253,7 +253,7 @@
     "file": "lessons/okhttp-chain.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "network-reliability",
       "coroutines"
@@ -279,7 +279,7 @@
         "claim": "明确涉及 OkHttp 拦截器、缓存与下载。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "network-reliability",
@@ -295,7 +295,7 @@
     "file": "lessons/network-reliability.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "offline-data",
       "ai-client"
@@ -311,7 +311,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "coroutines",
@@ -327,7 +327,7 @@
     "file": "lessons/coroutines.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "flow-state",
       "jmm-concurrency",
@@ -348,7 +348,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "flow-state",
@@ -364,7 +364,7 @@
     "file": "lessons/flow-state.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "coroutines",
       "compose-state"
@@ -384,7 +384,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "collections",
@@ -400,7 +400,7 @@
     "file": "lessons/collections.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "jmm-concurrency",
       "compose-state"
@@ -426,7 +426,7 @@
         "claim": "涉及 HashMap 实现、扩容与线程安全。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-state",
@@ -509,7 +509,7 @@
     "file": "lessons/compose-snapshot.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-state",
       "compose-phases"
@@ -537,7 +537,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-slots",
@@ -553,7 +553,7 @@
     "file": "lessons/compose-slots.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-compiler",
       "compose-effects"
@@ -577,7 +577,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-compiler",
@@ -593,7 +593,7 @@
     "file": "lessons/compose-compiler.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-slots",
       "compose-phases",
@@ -622,7 +622,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-phases",
@@ -638,7 +638,7 @@
     "file": "lessons/compose-phases.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-snapshot",
       "performance-proof"
@@ -662,7 +662,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-effects",
@@ -678,7 +678,7 @@
     "file": "lessons/compose-effects.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-state",
       "state-restoration",
@@ -699,7 +699,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "flutter-runtime",
@@ -714,7 +714,7 @@
     "file": "lessons/flutter-runtime.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "cross-boundaries",
       "cross-overview"
@@ -740,7 +740,7 @@
         "claim": "根据简历追问为何选择 Flutter；本文补充选型所需的机制知识。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "rn-architecture",
@@ -755,7 +755,7 @@
     "file": "lessons/rn-architecture.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "cross-boundaries",
       "flutter-runtime",
@@ -776,7 +776,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "kmp-boundaries",
@@ -791,7 +791,7 @@
     "file": "lessons/kmp-boundaries.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "cross-overview",
       "architecture-evolution"
@@ -811,7 +811,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "cross-boundaries",
@@ -827,7 +827,7 @@
     "file": "lessons/cross-boundaries.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "technology-decisions",
       "network-reliability"
@@ -843,7 +843,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "anr-diagnosis",
@@ -859,7 +859,7 @@
     "file": "lessons/anr-diagnosis.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "handler",
       "binder",
@@ -876,7 +876,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "performance-proof",
@@ -892,7 +892,7 @@
     "file": "lessons/performance-proof.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "startup-governance",
       "project-evidence"
@@ -908,7 +908,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "startup-governance",
@@ -923,7 +923,7 @@
     "file": "lessons/startup-governance.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "performance-proof",
       "architecture-evolution"
@@ -943,7 +943,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "technology-decisions",
@@ -959,7 +959,7 @@
     "file": "lessons/technology-decisions.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "cross-overview",
       "architecture-evolution",
@@ -976,7 +976,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "architecture-evolution",
@@ -992,7 +992,7 @@
     "file": "lessons/architecture-evolution.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "offline-data",
       "testing-strategy",
@@ -1013,7 +1013,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "offline-data",
@@ -1029,7 +1029,7 @@
     "file": "lessons/offline-data.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "network-reliability",
       "http-cache",
@@ -1050,7 +1050,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "project-evidence",
@@ -1066,7 +1066,7 @@
     "file": "lessons/project-evidence.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "performance-proof",
       "technology-decisions",
@@ -1079,7 +1079,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "testing-strategy",
@@ -1095,7 +1095,7 @@
     "file": "lessons/testing-strategy.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "offline-data",
       "architecture-evolution",
@@ -1116,7 +1116,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "build-release",
@@ -1132,7 +1132,7 @@
     "file": "lessons/build-release.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "testing-strategy",
       "architecture-evolution"
@@ -1152,7 +1152,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-client",
@@ -1168,7 +1168,7 @@
     "file": "lessons/ai-client.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "ai-agent-runtime",
       "ai-tools-context",
@@ -1190,7 +1190,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-evaluation",
@@ -1206,7 +1206,7 @@
     "file": "lessons/ai-evaluation.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "ai-rag-pipeline",
       "ai-retrieval",
@@ -1224,7 +1224,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "android-security",
@@ -1240,7 +1240,7 @@
     "file": "lessons/android-security.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "cross-boundaries",
       "build-release",
@@ -1261,7 +1261,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "senior-capability-map",
@@ -1277,7 +1277,7 @@
     "file": "lessons/senior-capability-map.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "project-evidence",
       "compose-state",
@@ -1294,7 +1294,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "interview-meituan-2025",
@@ -1462,7 +1462,7 @@
     "file": "lessons/ai-transformer.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-inference",
       "ai-training"
@@ -1482,7 +1482,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-training",
@@ -1497,7 +1497,7 @@
     "file": "lessons/ai-training.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-quality",
       "ai-rag-pipeline",
@@ -1522,7 +1522,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-inference",
@@ -1537,7 +1537,7 @@
     "file": "lessons/ai-inference.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-serving",
       "ai-edge-performance",
@@ -1572,7 +1572,7 @@
         "claim": "原帖第 2、4、5、6 项涉及推理、KV 和前缀缓存。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-serving",
@@ -1588,7 +1588,7 @@
     "file": "lessons/ai-serving.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-inference",
       "ai-quality",
@@ -1615,7 +1615,7 @@
         "claim": "原帖第 2 项询问推理加速；本篇调度与容量设计属于资深扩展。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-rag-pipeline",
@@ -1631,7 +1631,7 @@
     "file": "lessons/ai-rag-pipeline.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-retrieval",
       "ai-quality",
@@ -1663,7 +1663,7 @@
         "claim": "原帖询问 RAG 数据存储。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-retrieval",
@@ -1678,7 +1678,7 @@
     "file": "lessons/ai-retrieval.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-rag-pipeline",
       "ai-quality"
@@ -1709,7 +1709,7 @@
         "claim": "原帖涉及检索存储与 ES/MySQL 的差别。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-agent-runtime",
@@ -1725,7 +1725,7 @@
     "file": "lessons/ai-agent-runtime.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-tools-context",
       "ai-quality",
@@ -1762,7 +1762,7 @@
         "claim": "原帖第 1–4、8 项涉及工作流、循环、图编排与重试。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-tools-context",
@@ -1777,7 +1777,7 @@
     "file": "lessons/ai-tools-context.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-agent-runtime",
       "ai-rag-pipeline",
@@ -1809,7 +1809,7 @@
         "claim": "原帖第 5–10 项涉及工具参数、错误、Skill 与 Harness。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-quality",
@@ -1825,7 +1825,7 @@
     "file": "lessons/ai-quality.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-evaluation",
       "ai-coding",
@@ -1857,7 +1857,7 @@
         "claim": "原帖第 9 项涉及 Skill 的效果评测。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-coding",
@@ -1873,7 +1873,7 @@
     "file": "lessons/ai-coding.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-quality",
       "ai-tools-context",
@@ -1900,7 +1900,7 @@
         "claim": "原帖第 16–18 项涉及 AI 时代判断、代码审查与 AI Coding 问题。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-edge-architecture",
@@ -1916,7 +1916,7 @@
     "file": "lessons/ai-edge-architecture.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-edge-runtime",
       "ai-edge-performance",
@@ -1942,7 +1942,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-edge-runtime",
@@ -1957,7 +1957,7 @@
     "file": "lessons/ai-edge-runtime.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-edge-architecture",
       "ai-quantization",
@@ -1994,7 +1994,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-quantization",
@@ -2009,7 +2009,7 @@
     "file": "lessons/ai-quantization.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-inference",
       "ai-edge-runtime",
@@ -2040,7 +2040,7 @@
         "claim": "原帖第 3–4 项分别询问压缩量化与权重、激活、KV 的收益。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-edge-performance",
@@ -2056,7 +2056,7 @@
     "file": "lessons/ai-edge-performance.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-edge-architecture",
       "ai-inference",
@@ -2082,7 +2082,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "ai-multimodal",
@@ -2098,7 +2098,7 @@
     "file": "lessons/ai-multimodal.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "ai-edge-architecture",
       "ai-edge-performance",
@@ -2119,7 +2119,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "interview-ai-infra-byte",
@@ -2345,7 +2345,7 @@
     "file": "lessons/ai-roadmap.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "ai-edge-architecture",
       "ai-inference",
@@ -2393,7 +2393,7 @@
         "claim": "用于 Agent 运行可靠性与 Harness 选题。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "jvm-runtime",
@@ -2409,7 +2409,7 @@
     "file": "lessons/jvm-runtime.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "jmm-concurrency",
       "java-threads",
@@ -2440,7 +2440,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "java-threads",
@@ -2456,7 +2456,7 @@
     "file": "lessons/java-threads.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "jmm-concurrency",
       "java-locks",
@@ -2487,7 +2487,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "java-locks",
@@ -2502,7 +2502,7 @@
     "file": "lessons/java-locks.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "jmm-concurrency",
       "java-threads",
@@ -2532,7 +2532,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "gc-runtime",
@@ -2548,7 +2548,7 @@
     "file": "lessons/gc-runtime.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "jvm-runtime",
       "memory-art",
@@ -2578,7 +2578,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "handler",
@@ -2594,7 +2594,7 @@
     "file": "lessons/handler.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "java-threads",
       "jmm-concurrency",
@@ -2639,7 +2639,7 @@
         "claim": "涉及主线程 Looper 与 Handler。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "memory-art",
@@ -2655,7 +2655,7 @@
     "file": "lessons/memory-art.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "jvm-runtime",
       "gc-runtime",
@@ -2691,7 +2691,7 @@
         "claim": "涉及内存泄漏观察与常见场景。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "oom-diagnosis",
@@ -2707,7 +2707,7 @@
     "file": "lessons/oom-diagnosis.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "memory-art",
       "gc-runtime",
@@ -2738,7 +2738,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "jmm-concurrency",
@@ -2753,7 +2753,7 @@
     "file": "lessons/jmm-concurrency.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 4,
+    "version": 5,
     "related": [
       "jvm-runtime",
       "java-threads",
@@ -2785,7 +2785,7 @@
         "claim": "涉及 Java 内存模型与并发。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "runtime-roadmap",
@@ -2800,7 +2800,7 @@
     "file": "lessons/runtime-roadmap.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 3,
+    "version": 4,
     "related": [
       "jvm-runtime",
       "jmm-concurrency",
@@ -2826,7 +2826,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-foundations",
@@ -2841,7 +2841,7 @@
     "file": "lessons/compose-foundations.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-components",
       "compose-state"
@@ -2873,7 +2873,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-components",
@@ -2888,7 +2888,7 @@
     "file": "lessons/compose-components.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-state",
       "compose-layout",
@@ -2921,7 +2921,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-layout",
@@ -2936,7 +2936,7 @@
     "file": "lessons/compose-layout.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-phases",
       "compose-lazy",
@@ -2965,7 +2965,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-graphics-animation",
@@ -2980,7 +2980,7 @@
     "file": "lessons/compose-graphics-animation.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-phases",
       "compose-input",
@@ -3009,7 +3009,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-input",
@@ -3024,7 +3024,7 @@
     "file": "lessons/compose-input.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-layout",
       "compose-effects",
@@ -3053,7 +3053,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-lazy",
@@ -3068,7 +3068,7 @@
     "file": "lessons/compose-lazy.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-slots",
       "compose-state",
@@ -3089,7 +3089,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-performance",
@@ -3104,7 +3104,7 @@
     "file": "lessons/compose-performance.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-phases",
       "compose-compiler",
@@ -3130,7 +3130,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-testing",
@@ -3145,7 +3145,7 @@
     "file": "lessons/compose-testing.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-state",
       "compose-effects",
@@ -3174,7 +3174,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-navigation",
@@ -3189,7 +3189,7 @@
     "file": "lessons/compose-navigation.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-state",
       "compose-effects",
@@ -3218,7 +3218,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-interop",
@@ -3233,7 +3233,7 @@
     "file": "lessons/compose-interop.md",
     "type": "学习文章",
     "origin": "岗位必修",
-    "version": 2,
+    "version": 3,
     "related": [
       "compose-navigation",
       "compose-testing",
@@ -3255,7 +3255,7 @@
       }
     ],
     "evidence": [],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "content-depth",
