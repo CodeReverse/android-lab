@@ -430,7 +430,7 @@
   },
   {
     "id": "compose-state",
-    "title": "Compose State：remember 记住什么，谁让界面更新",
+    "title": "Compose State：从收藏按钮到状态管理与 Runtime",
     "category": "compose",
     "topic": "状态与所有权",
     "tags": [
@@ -438,11 +438,11 @@
       "Compose State",
       "remember 记住什么，谁让界面更新"
     ],
-    "summary": "从一个计数器拆开存储、可观察性、状态提升和恢复，连接底层读写订阅。",
+    "summary": "以收藏与搜索页面逐步推演：State、by、remember、状态提升、集合更新、数据源桥接、恢复与 Snapshot；代码配解释，文末提炼面试重点。",
     "file": "lessons/compose-state.md",
     "type": "学习文章",
     "origin": "面经 + 岗位必修",
-    "version": 5,
+    "version": 6,
     "related": [
       "compose-snapshot",
       "compose-slots",
@@ -450,20 +450,40 @@
     ],
     "sources": [
       {
-        "title": "Compose 状态管理",
+        "title": "Compose 状态与数据源桥接",
         "url": "https://developer.android.com/develop/ui/compose/state"
       },
       {
-        "title": "SnapshotState 源码入口",
-        "url": "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
+        "title": "State API",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/State"
+      },
+      {
+        "title": "MutableState API",
+        "url": "https://developer.android.com/reference/kotlin/androidx/compose/runtime/MutableState"
+      },
+      {
+        "title": "状态提升",
+        "url": "https://developer.android.com/develop/ui/compose/state-hoisting"
+      },
+      {
+        "title": "状态保存",
+        "url": "https://developer.android.com/develop/ui/compose/state-saving"
+      },
+      {
+        "title": "Kotlin 属性委托",
+        "url": "https://kotlinlang.org/docs/delegated-properties.html"
+      },
+      {
+        "title": "组合生命周期",
+        "url": "https://developer.android.com/develop/ui/compose/lifecycle"
       },
       {
         "title": "Compose 各阶段读取",
         "url": "https://developer.android.com/develop/ui/compose/phases"
       },
       {
-        "title": "状态保存",
-        "url": "https://developer.android.com/develop/ui/compose/state-saving"
+        "title": "SnapshotState 固定提交源码",
+        "url": "https://github.com/androidx/androidx/blob/7ac433e44e797de53af85226797862687f37735f/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
       }
     ],
     "evidence": [
@@ -473,7 +493,7 @@
         "claim": "原帖涉及 Compose 与 State；本文将状态问题展开成学习正文。"
       }
     ],
-    "updated": "2026-10-27"
+    "updated": "2026-11-13"
   },
   {
     "id": "compose-snapshot",

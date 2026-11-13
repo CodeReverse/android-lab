@@ -93,8 +93,8 @@ export function validateExtraction(raw, page, categories, config) {
 }
 export const draftSchema=z.object({
   title:z.string().min(8).max(120), summary:z.string().min(30).max(250),
-  sections:z.array(z.object({heading:z.string().min(2).max(60),body:z.string().min(100).max(800)})).min(4).max(8),
-  review:z.array(z.object({question:z.string().min(6).max(120),section:z.number().int().min(1).max(8)})).min(3).max(5),
+  sections:z.array(z.object({heading:z.string().min(2).max(60),body:z.string().min(100).max(5000)})).min(4).max(16),
+  review:z.array(z.object({question:z.string().min(6).max(120),section:z.number().int().min(1).max(16)})).min(3).max(5),
   answers:z.array(z.object({sourceQuestion:z.number().int().min(1).max(3),answer:z.string().min(80).max(500)})).min(1).max(3),
   references:z.array(z.object({url:z.string().url(),supports:z.string().min(10).max(250)})).min(1).max(5),
   versionScope:z.string().min(20).max(700), exercise:z.string().min(80).max(500),
@@ -107,7 +107,8 @@ export function validateDraft(raw, extraction, references) {
   const generated=[data.title,data.summary,data.versionScope,...data.sections.flatMap(x=>[x.heading,x.body]),...data.review.map(x=>x.question),...data.answers.map(x=>x.answer),data.exercise].join('\n');
   if (/https?:\/\/|^#{1,2} |<script|javascript:/im.test(generated)) throw Error('正文含未核验链接或非法结构');
   const length=data.sections.reduce((s,x)=>s+x.body.length,0);
-  if(length<900 || length>3200)throw Error('学习正文需在 900–3200 字符内讲清机制，超出时拆篇');
+  if(length<900)throw Error('正文尚不足以展开场景、例子与机制');
+  if(length>40000)throw Error('超过单次生成的处理上限；未收录，请拆分独立主题');
   if(data.sections.some(x=>/[？?]|第\s*\d+\s*问/.test(x.heading) || /^(?:[QA]：|问：|答：|### .*?[？?])/m.test(x.body)))throw Error('学习正文使用陈述式讲解，问答放在文末');
   if(data.review.some(x=>x.section>data.sections.length) || new Set(data.review.map(x=>x.question)).size!==data.review.length)throw Error('面试提炼必须去重且对应已存在的小节');
   return data;

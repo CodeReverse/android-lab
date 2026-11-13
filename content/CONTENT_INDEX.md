@@ -1,6 +1,6 @@
 # 知识正文与面经详解目录
 
-更新：2026-10-27。69 篇学习正文采用连续讲解与文末面试提炼；明确面经保留逐题答案。
+更新：2026-11-13。69 篇学习正文采用连续讲解与文末面试提炼；明确面经保留逐题答案。
 
 ## Android 相关技术
 
@@ -50,7 +50,7 @@
 
 ## Compose
 
-- [Compose State：remember 记住什么，谁让界面更新](source/lessons/compose-state.md) — 学习文章；文末复习 5 问
+- [Compose State：从收藏按钮到状态管理与 Runtime](source/lessons/compose-state.md) — 学习文章；文末复习 5 问
 - [Snapshot 原理：状态版本、读取观察与冲突合并](source/lessons/compose-snapshot.md) — 学习文章；文末复习 5 问
 - [组合树与 SlotTable：位置身份怎样保存 remember](source/lessons/compose-slots.md) — 学习文章；文末复习 5 问
 - [Compose 编译器：IR 变换、changed 标记与强跳过](source/lessons/compose-compiler.md) — 学习文章；文末复习 5 问

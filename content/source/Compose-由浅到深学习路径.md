@@ -1,6 +1,6 @@
 # Compose 由浅到深学习路径
 
-更新：2026-10-27 · 版本：4
+更新：2026-11-13 · 版本：5
 
 ## 1. 阅读方法
 
@@ -40,13 +40,13 @@
 
 | 知识点 | 具体学习文章 | 定位 |
 | --- | --- | --- |
-| State/MutableState、属性委托、remember、普通集合 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 1、2、3、4 节 |
-| 状态提升、持有者与恢复矩阵 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 5、6 节 |
-| rememberSaveable、Saver、SaveableStateHolder、SavedStateHandle | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 6、7 节 |
-| remember(key)、key(...) 与身份 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 8 节 |
-| Flow 收集生命周期与生产生命周期 | [Compose State：remember 记住什么，谁让界面更新](#/article/compose-state) | 第 9 节 |
+| State/MutableState、属性委托、remember、普通集合 | [Compose State：从收藏按钮到状态管理与 Runtime](#/article/compose-state) | 第 1、2、3、6 节 |
+| 状态提升、持有者与恢复矩阵 | [Compose State：从收藏按钮到状态管理与 Runtime](#/article/compose-state) | 第 5、11 节 |
+| rememberSaveable、Saver、SaveableStateHolder、SavedStateHandle | [Compose State：从收藏按钮到状态管理与 Runtime](#/article/compose-state) | 第 8、9 节 |
+| remember(key)、key(...) 与身份 | [Compose State：从收藏按钮到状态管理与 Runtime](#/article/compose-state) | 第 10 节 |
+| Flow 收集生命周期与生产生命周期 | [Compose State：从收藏按钮到状态管理与 Runtime](#/article/compose-state) | 第 7 节 |
 
-**学习产出**：为搜索词、结果、滚动位置与草稿选择所有者，推演页面重建。
+**学习产出**：为搜索词、结果、滚动位置与草稿选择所有者，推演页面重建。State 样章第 4、12 节补充写入到 UI 更新及 Runtime 原理，第 13 节提供对照验证。
 
 ## 5. 阶段 3：副作用、协程和数据接入
 

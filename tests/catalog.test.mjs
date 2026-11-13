@@ -131,8 +131,8 @@ test("learning articles use concise prose and end with answerable interview revi
     for(const q of questions){
       const n=q[2].match(/回看第 (\d+) 节/);if(n)assert.ok(Number(n[1])<=sections.length,a.id);
     }
-    // Sources and tables can be long; constrain the actual numbered explanations.
-    assert.ok(sections.reduce((n,x)=>n+x[3].length,0)<=3800,`${a.id}: split an overlong explanation`);
+    // Teaching depth is not constrained by an arbitrary short-article character budget.
+    assert.equal((a.markdown.match(/^```/gm)||[]).length % 2,0,`${a.id}: unclosed code fence`);
   }
   const expected={"jvm-runtime":"languages","java-threads":"languages","java-locks":"languages","gc-runtime":"languages","handler":"android","memory-art":"android","oom-diagnosis":"diagnosis"};
   for(const [id,category] of Object.entries(expected)){

@@ -40,7 +40,8 @@ test('generation requires complete answers, sufficient depth and fetched princip
  const bad=generated();bad.sections[0].body+='\n## 伪造标题';assert.throws(()=>validateDraft(bad,extraction,[ref]));
  const faq=generated();faq.sections[0].heading='什么是消息循环？';assert.throws(()=>validateDraft(faq,extraction,[ref]),/陈述式/);
  const wrong=generated();wrong.review[0].section=8;assert.throws(()=>validateDraft(wrong,extraction,[ref]),/小节/);
- const long=generated();long.sections.forEach(x=>x.body='机制'.repeat(350));assert.throws(()=>validateDraft(long,extraction,[ref]),/拆篇/);
+ const tutorial=generated();tutorial.sections.forEach(x=>x.body='机制'.repeat(600));assert.ok(validateDraft(tutorial,extraction,[ref]));
+ const oversized=generated();oversized.sections=Array.from({length:9},()=>({heading:'完整教学小节',body:'机制'.repeat(2400)}));assert.throws(()=>validateDraft(oversized,extraction,[ref]),/处理上限/);
  const out=renderDraft('research-0123456789abcdef',extraction,good,{url:'https://www.nowcoder.com/a',title:page.title,publishedAt:null,dateEvidence:'发布时间未核验'},'2026-10-25');
  assert.match(out.markdown,/发布时间：未核验/);assert.match(out.markdown,/验证设计（未执行）/);
  assert.equal([...out.markdown.matchAll(/^## \d+\. /gm)].length,6);assert.equal(out.metadata.category,'android');
