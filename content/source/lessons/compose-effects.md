@@ -1,106 +1,251 @@
-## 1. UI 描述与外部副作用
+搜索页不只是把状态画出来：它要请求数据、延迟提示、注册监听，有时还要嵌入旧 View。问题在于 Composable 可以重新执行，而这些动作不能随每次执行无条件重来。本篇让搜索页逐步增加需求，每次只引入解决当前问题的工具。
 
-做一个搜索页：输入变化要请求结果，页面离开要停止无用任务，返回后又要显示正确内容。最直观的写法是把请求放进 Composable 函数体，但函数可能因许多无关状态变化再次执行。我们需要先把“描述现在显示什么”与“发起一次外部操作”分开。
+前置：[State 与数据源](#/article/compose-state)。代码使用 Runtime、kotlinx.coroutines 与 Material 3；服务调用和业务对象是示意接口，按段落说明替换。示例未在 Android 工程执行，不能将注释中的预期视作实测。
 
-根据参数计算应显示什么，可以看作界面描述；修改外部系统、发网络请求、注册监听或导航，则改变了组合之外的世界。组合执行可能重复或被放弃，因此需要明确副作用何时启动、何时重启、谁负责取消和清理，而不能把函数被调用一次当成业务只执行一次的保证。
+## 1. 界面描述被重复执行，外部动作不能跟着重复
 
-## 2. LaunchedEffect 的任务生命周期
+先看一段错误思路的伪代码：
 
-请求不能随函数调用次数启动，就必须有独立的身份和生命周期。对于与当前查询绑定的协程，LaunchedEffect 用 key 把“这还是不是同一项工作”表达出来。
+```text
+SearchScreen(query):
+    调用 repository.search(query)
+    根据结果描述列表
+```
 
-LaunchedEffect 在进入组合时启动协程，key 变化时取消旧任务再启动新任务，离开组合时取消。key 应表达这项工作的身份，例如当前用户 ID；不能为了“只跑一次”永远传 Unit，却在内部读取会变化且应重启的查询条件。
+当输入变了，重跑请求看起来合理。但主题、错误提示或另一个状态变化，也可能让这段函数重新执行；某次组合工作还可能没有最终应用。于是“调用函数一次”并不能表达“用户发起一次搜索”。
 
-一个用于说明 key 的简化片段如下：
+UI 描述主要根据输入计算结构；请求会改变外部世界、消耗资源并产生未来结果。二者需要不同的执行契约。否则为了展示一次 loading 而重执行，又发起新的请求，可能把状态更新和请求触发连成循环。
+
+一种替代方案是把搜索完全放进 ViewModel：输入事件进入状态持有者，UI 只显示结果。这对跨配置持续的屏幕业务很合适。但动画、局部计时、与组合内容绑定的监听等仍需要在 UI 层拥有生命周期，Effect 正是为这些需求提供入口。
+
+所以先问工作由谁拥有：离开这段 UI 就没意义，还是离开后仍应继续？这个答案先于选 LaunchedEffect 或全局作用域。
+
+## 2. 用 key 表达一项协程工作的身份
+
+先只做一个“输入稳定 300ms 后通知搜索”的局部组件：
 
 ```kotlin
-LaunchedEffect(query) {
-    delay(300)
-    onSearch(query)
+@Composable
+fun DebouncedSearch(query: String, onSearch: suspend (String) -> Unit) {
+    LaunchedEffect(query) {
+        delay(300)
+        onSearch(query)
+    }
 }
 ```
 
-查询在 300ms 内变化，旧计时会被取消，新计时重新开始；这解释了 key 为什么是 query。它只展示组合内防抖的生命周期，不包含请求错误处理、结果代次和跨配置保存。真正的页面若要求任务跨配置变化持续，应把请求状态放在合适的状态持有者中。
+需要 Runtime 的 LaunchedEffect 和协程 delay。进入组合时启动任务；query 改变时旧任务取消，新任务使用新 query；这段内容离开组合时任务取消。300ms 只是本例交互选择，不能作为通用防抖标准。
 
-## 3. Effect key 与最新回调
+按时间线推演：
 
-把所有变化都加进 key 也不对。假设页面有一个延时提示，只想使用最新的处理回调，却不想每次回调更新都重新计时，此时“工作身份变化”和“工作读取的新值”就要分开。
+```text
+0ms：query=A，启动计时 A
+100ms：query=AB，取消 A，启动计时 AB
+400ms：AB 计时结束，调用 onSearch(AB)
+```
 
-一个等待后调用 onTimeout 的 effect，可能希望计时不中断，但调用最新回调。如果把回调做 key，回调身份变化会重启计时；如果完全忽略变化，又可能捕获旧回调。rememberUpdatedState 用于让已有长期工作访问最新值，解决的是“更新捕获值而不重启”的特定需求。
+为什么 key 是 query？因为 query 变化意味着需要一项不同搜索工作。若永远写 Unit，组合位置不变时输入更新不会按 query 重启；任务可能仍使用启动时捕获的旧查询。
 
-它不能替代真正需要重启的身份变化。例如账号切换后继续沿用旧账号的任务，只把结果回调更新为新页面，可能造成跨账号污染。是否重启应由业务语义决定，不由减少启动次数决定。
+也不能把每帧变化但不定义工作身份的所有数据都塞进 key，那会让任务不断重启。上述片段还假设 onSearch 的实现身份稳定；如果回调可以变化，要决定变化是否要求重启，下一节处理“只更新回调”的情形。
 
-## 4. 监听注册与配对清理
+取消是协作的。delay 能响应取消，某个阻塞库未必能立即停；Effect 管理协程生命周期，不替第三方库实现取消。[LaunchedEffect 的公开契约](https://developer.android.com/develop/ui/compose/side-effects)。
 
-协程退出能处理协作式取消，但搜索页还可能注册定位或网络监听。注册动作必须有配对解绑，不能只依靠某次重组恰好执行清理代码。
+## 3. 计时保持不变，但完成后使用最新回调
 
-DisposableEffect 适合注册外部监听，并在 key 改变或离开组合时清理。注册的 owner 应参与身份判断，解绑要对应原先注册的那个实例。SideEffect 则适合在成功组合后把最新状态同步给非 Compose 对象，不能在其中执行长时间阻塞任务。
+给搜索页增加一个延时提示。产品要求进入页面 2 秒后提示一次；等待期间父层可以替换提示处理逻辑，但不应从头再等 2 秒。
 
-rememberCoroutineScope 适合从点击等事件启动与该组合位置关联的协程；它和 LaunchedEffect 的触发语义不同。无论选哪一种，取消都需要底层工作协作，资源释放不能只期待一个 Job 状态变化。
+若写 `LaunchedEffect(onTimeout)`，回调身份变化会重启计时；若写 Unit 却直接捕获 onTimeout，旧任务可能调用旧回调。我们需要稳定的工作身份，加一个能读到最新回调的容器：
 
-## 5. 状态桥接 API 的数据方向
+```kotlin
+@Composable
+fun SearchHint(onTimeout: () -> Unit) {
+    val latestOnTimeout by rememberUpdatedState(onTimeout)
+    LaunchedEffect(Unit) {
+        delay(2_000)
+        latestOnTimeout()
+    }
+}
+```
 
-有了生命周期后，再看数据从哪里来到哪里去：外部监听变成界面状态，还是界面状态变成异步流？方向不同，应选的桥接工具也不同。
+rememberUpdatedState 在后续组合中更新保存的值，让已经运行的任务访问当前回调。`latestOnTimeout()` 的委托读取发生在任务真正调用时，而不是只取出第一次的回调一直使用。
 
-| 工具 | 数据方向 | 典型需求 | 不应误用为 |
-| --- | --- | --- | --- |
-| produceState | 外部异步源 → Compose State | 订阅外部传感器并显示最新值 | 任意任务的永久后台作用域 |
-| snapshotFlow | Snapshot 状态读取 → Flow | 观察滚动位置作过滤/统计 | 保证每次赋值都到达的事件队列 |
-| derivedStateOf | 状态依赖 → 派生状态 | 高变化输入到低变化结果 | 所有简单表达式的必需包装 |
+这里有两种变化：任务身份变化应取消重启；仅任务使用的数据变化可以更新读取。如果从账号 A 切到 B，查询所属账号已经变了，就不能只用 latest 回调把 A 的结果交给 B。账号应参与任务身份或由业务状态层隔离。
 
-produceState 的生产协程与组合及 keys 关联，非挂起订阅可配合 awaitDispose 清理。snapshotFlow 在收集时跟踪块内快照读取，相关状态变化后重算，结果按相等规则发射；计算块应无副作用，不在里面写状态。derivedStateOf 没有把任意昂贵计算搬到后台线程。[副作用资料](https://developer.android.com/develop/ui/compose/side-effects)。
+回到上一节，可以让 query 作为 key、回调用最新值模式；也可以把 onSearch 纳入 key，前提是重启符合需求。没有一个万能的“所有回调都加 key”规则。
 
-## 6. 搜索防抖与过期结果
+## 4. 注册一次监听，就要定义一次解绑
 
-现在把工具放回搜索页。连续输入两个查询时，即使正确重启了 effect，旧请求仍可能在传输层或回调层迟到；生命周期控制还需要结果身份校验来补齐。
+搜索页还显示网络是否可用。假设已有一个回调式源，接口约定 register/unregister 配对：
 
-原创时序：t0 输入 A，t1 输入 AB，t2 AB 请求先返回，t3 A 请求迟到。即使已取消 A，也要考虑传输或回调不协作的情况；提交结果前校验账号、query 或请求代次。取消降低无效工作，身份校验防止无效结果成为当前状态，两者互补。
+```kotlin
+interface StatusSource {
+    fun register(listener: (Boolean) -> Unit)
+    fun unregister(listener: (Boolean) -> Unit)
+}
 
-建议屏幕状态层统一处理查询与请求，组合层只提交输入和展示结果。防抖减少触发频率，distinct 去除连续等价查询，latest 类操作取消上一任务，但并不自动给予服务端“没执行”的保证。异常处理应区分取消与真实失败，不吞掉 CancellationException 再把取消显示为错误。若搜索需跨配置变化持续，作用域应与该需求一致。
+@Composable
+fun ObserveStatus(source: StatusSource, onStatus: (Boolean) -> Unit) {
+    val latestOnStatus by rememberUpdatedState(onStatus)
+    DisposableEffect(source) {
+        val listener: (Boolean) -> Unit = { latestOnStatus(it) }
+        source.register(listener)
+        onDispose { source.unregister(listener) }
+    }
+}
+```
 
-## 7. 外部监听的完整生命周期
+本例假设 source 在约定的 UI 执行上下文回调；若源从后台线程调用，应在适配层切换到消费者要求的上下文，并保留取消与身份校验。source 定义订阅身份，listener 是本次注册的具体对象。清理闭包保存同一 source 与同一 listener，避免“用新对象去解绑旧注册”。回调更新不需要重新注册，但 source 变化需要结束旧订阅。
 
-请求结果会过期，监听回调也会。切换 owner 时不仅要展示新数据，更要停止旧 owner 继续送来数据，所以要把注册、回调更新和解绑连成完整时序。
+为什么不用 LaunchedEffect 注册后立即返回？协程块完成不等于回调源已解绑；如果注册 API 没有挂起生命周期，需要明确清理。可以通过挂起适配或 callbackFlow 统一到业务层，但 DisposableEffect 是组合内配对资源的直接表达。
 
-用 owner 作为 DisposableEffect 的身份，注册时保存本次监听对象，onDispose 解绑同一 owner 上的同一对象。回调仅需更新时可通过 rememberUpdatedState 读取最新业务处理；若 owner 或账号改变，必须解绑旧注册再绑定新目标。不要只更新回调却保留旧账号订阅。
+SideEffect 解决另一种需求：成功应用组合后，把最新配置同步给外部对象，例如更新一个分析组件的用户属性。它没有注册/解绑对称结构，执行块也不适合阻塞工作。用 effect 名称之前，先明确操作是持续资源、协程任务，还是成功应用后的短同步。
 
-验证设计：owner A→B→离开，期望 A 注册/解绑一次，B 注册/解绑一次；回调函数改变但 owner 不变，期望不重复注册且调用新逻辑。SideEffect 的基础无 key 形式适合成功应用组合后的同步，不能承担耗时阻塞；较新有 key 重载按所用 Runtime 版本另查，不能把其语义套到所有版本。
+更底层为什么要区分已记住、已遗忘、已放弃，在 [组合结构第 8 节](#/article/compose-slots?section=8) 说明；[Effects 固定源码](https://github.com/androidx/androidx/blob/b8f12c706099a47e1e44d9772d03e14a4ae37146/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Effects.kt)用于继续跟踪 RememberObserver 与 Job 的协作。
 
-## 8. 混合 UI 的生命周期
+## 5. 用数据方向区分三种状态桥接
 
-如果搜索页里嵌入了传统 View，同样的规则仍然成立，只是资源由 View 和 Composition 共同持有。创建、更新与释放不能再写成一个每次执行都重新注册的代码块。
+刚才 StatusSource 是“外部回调 → UI 状态”。若组件希望自己得到一个 State，而不是要求调用方接回调，可以用 produceState 组织生产与释放：
 
-AndroidView 的 factory 用于创建 View，update 根据状态更新已有 View，不应在 update 中无限重复注册监听或创建昂贵对象。需要复用或释放时按对应 API 的契约处理。旧 View 内部回调也应指向当前业务状态，而不是永久捕获初次组合的参数。
+```kotlin
+@Composable
+fun rememberOnline(source: StatusSource): State<Boolean> =
+    produceState(initialValue = false, key1 = source) {
+        val listener: (Boolean) -> Unit = { online -> value = online }
+        source.register(listener)
+        awaitDispose { source.unregister(listener) }
+    }
+```
 
-ComposeView 放在 Fragment 中，需要让 Composition 的释放策略匹配宿主 View 生命周期；在池化或复用容器中又要考虑对应策略。不要把 Activity 销毁作为所有嵌入式组合的唯一释放时间。
+这里 false 是初始显示值；真实产品可能需要“尚未知”的第三种状态。source 作为 key 决定何时重建生产任务，awaitDispose 配对非挂起的注册资源。函数名含 remember 不赋予额外魔法，关键是 produceState 的生命周期协议。
 
-## 9. 业务去重与恰好一次的边界
+若方向相反，要把列表滚动状态接到 Flow 链用于分析，可以使用 snapshotFlow：
 
-资源没有泄漏、旧结果没有覆盖，也不意味着业务只执行一次。用户离开后再次进入，甚至请求已提交时进程被杀，都可能触发新的工作；支付、发送等动作需要更高一层的去重协议。
+```kotlin
+LaunchedEffect(listState) {
+    snapshotFlow { listState.firstVisibleItemIndex > 0 }
+        .filter { it }
+        .take(1)
+        .collect { reportFirstScroll() }
+}
+```
 
-Effect 与组合身份关联，页面重新进入可能再次启动；进程可在请求提交后、记录结果前终止。UI 端缺少原子跨系统提交能力，所以付款、发送等动作需要业务幂等键、持久结果与恢复查询。把 key 固定为 Unit 不会产生分布式事务。
+这里 reportFirstScroll 是本例业务占位函数，需引入 Flow 操作符。收集时跟踪快照读取，相关变化后重新计算，结果按相等关系决定发射；不能把它当每次赋值必达的队列。块中应只计算结果，不写状态或执行外部操作。
 
-点击发起的 Snackbar 可用 rememberCoroutineScope，必须跨页面完成的上传应由业务任务层接管。技术分析要说清：谁发起、谁拥有、何时取消、是否允许重复、失败怎样恢复。这比罗列 Effect 名字更能暴露真实设计能力。
+如果只想决定按钮显隐，不需要异步流，那么 `derivedStateOf { ... }` 更贴合“输入状态 → 派生状态”。它不会启动后台协程，也不会让昂贵计算自动异步化。
 
-## 10. 取消、重入与释放验证
+这三个工具分别连接不同边界：外部生产进入 State、State 读取进入 Flow、State 派生另一个状态。先画数据方向，再选 API。[状态与副作用工具](https://developer.android.com/develop/ui/compose/side-effects)。
 
-最后用搜索页的真实变化验证这些边界：输入改变、owner 切换、回调更新、页面离开和重新进入。只有把这些动作放在同一条时间线上，重复任务与漏清理才容易暴露。
+## 6. 搜索请求取消了，旧结果仍需要身份校验
 
-写一个可切换 owner 的监听组件，记录注册和解绑次数；模拟导航离开、返回、key 变化和回调更新。断言同一 owner 没有重复监听，旧 owner 已清理，长期计时使用新回调且不会误串账号。
+防抖减少发出的请求，不能代替结果仲裁。设 A 请求已发出，随后 AB 发出并先返回；A 的某个非协作回调最后才到。如果它无条件写 UI，会把新结果覆盖。
 
-## 原理依据与适用边界
+先写清业务规则，再决定在哪一层实现：
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+```text
+每次接受新查询：
+    推进 requestGeneration
+    记录当前 accountId、规范化 query
+    请求携带这份身份
 
-- [Compose effect 官方契约](https://developer.android.com/develop/ui/compose/side-effects)
-- [在 Compose 中使用 View](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)
-- [在 View 中使用 Compose](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
+结果到达：
+    账号与代次仍匹配 → 才能提交结果
+    已过期 → 丢弃，不显示成当前请求的失败或成功
+```
+
+这个检查不仅应在画面赋值前，也要考虑缓存或数据库写入的账号归属。取消尽量减少无效工作，身份校验保护迟到结果；两者解决不同问题。
+
+异常处理还要保留取消语义：
+
+```kotlin
+try {
+    val result = repository.search(query) // 示意挂起接口
+    publishIfCurrent(requestIdentity, result)
+} catch (e: CancellationException) {
+    throw e
+} catch (e: IOException) {
+    publishFailureIfCurrent(requestIdentity, e)
+}
+```
+
+这不是完整仓储实现；publishIfCurrent 需要在状态拥有者的受控执行边界核验与更新，不能校验后任由另一个线程切换身份再无条件提交。新旧请求并发规则可由 ViewModel 状态机表达，而不是分散在多个 UI effect 里。
+
+跨配置持续的搜索应交给相应状态持有者。Composable 负责提交输入与消费状态，数据桥接见 [State 第 7 节](#/article/compose-state?section=7)；取消机制本身见 [协程教程](#/article/coroutines)。
+
+## 7. 把 source 切换完整走一遍
+
+第 4 节的监听例子可以用四个动作检查：进入 source A，更新 onStatus，切换 source B，离开页面。先写预期表：
+
+| 动作 | 订阅动作 | 后续回调应交给谁 |
+| --- | --- | --- |
+| 初次进入 A | A 注册 listenerA | 当前 onStatus |
+| 仅回调更新 | 不因这次更新重新注册 | 更新后的 onStatus |
+| A 换成 B | 解绑 A，绑定 B | B 所属的当前处理逻辑 |
+| 离开内容 | 解绑 B | 不再接受该 UI 订阅 |
+
+这张表解释了 owner 作为 key、latest 回调作为读取值的配合。若把所有东西都放 Unit，切换 B 不会重建正确订阅；若把每次创建的新 listener 作为 key，又可能无端重启。
+
+底层 unregister 也可能无法撤销已经在队列里的回调。如果回调会提交账号数据，要在业务层继续核验身份。`onDispose` 是清理入口，不是让全世界在同一瞬间撤回在途工作的协议。
+
+可以用 fake source 记录注册对象与解绑对象是否相同，再主动派发“解绑后迟到事件”。这个 Spike 能验证我们最容易漏掉的假设：停止订阅是否等于绝无旧事件。结果以实际源契约为准。
+
+## 8. 混合 View 页面也需要同样的所有权协议
+
+如果搜索结果包含旧地图 View，创建、更新和释放对应不同时间：
+
+```kotlin
+AndroidView(
+    factory = { context -> LegacyMapView(context) },
+    update = { view -> view.showSelected(selectedId) }
+)
+```
+
+LegacyMapView 为业务占位类。factory 用于创建，update 可能在状态变化后再次执行。因此昂贵对象构造、无限追加监听或启动不可回收任务不应藏在 update 中。
+
+另一方向，Fragment 用 ComposeView 承载内容时，Fragment 本体与它的 View 生命周期不同。旧 View 被销毁后，组合及监听应跟随正确边界结束，不能等 Fragment 最终消失才处理。
+
+此处不用新的记忆口诀：仍然是“谁创建、谁持有、什么变化需要重新绑定、何时释放”。宿主配置、AndroidView 重置与回收的协议推演放在 [互操作第 1–4 节](#/article/compose-interop?section=1)，避免把资源生命周期在两篇中各讲半套。
+
+## 9. 点击动作与持续任务选择不同触发入口
+
+用户点击显示 Snackbar，是一个事件，不需要等某个 key 变化来推断。可在组合中取得受该位置生命周期管理的作用域，再从事件启动：
+
+```kotlin
+val scope = rememberCoroutineScope()
+val host = remember { SnackbarHostState() }
+Button(onClick = {
+    scope.launch { host.showSnackbar("已提交收藏操作") }
+}) {
+    Text("收藏")
+}
+```
+
+SnackbarHostState 需接入相应宿主才能显示。rememberCoroutineScope 提供事件发生时可用的 scope，本身不在每次组合时启动任务；内容离开后，该 scope 的任务会取消。
+
+如果是必须离开页面仍完成的上传，这个寿命就不对，应交给业务任务层或适合的持久工作机制。若是付款，LaunchedEffect(Unit) 也不能保证恰好一次：重新进入页面会有新的生命周期，进程还可能在服务端成功后、本地确认前死亡。
+
+副作用的 UI 生命周期与业务幂等是两层协议。支付操作需要稳定业务操作 ID、服务端防重及恢复查询；不能把技术方案缩成“把 key 固定就不会重复”。[请求幂等与结果未知](#/article/network-reliability)继续解释跨系统边界。
+
+## 10. 用失败时序检验 Effect 选择
+
+现在搜索页已有输入、提示、监听和点击操作。不要只在正常启动时看它们各执行一次，而要主动改变所有权与工作身份：
+
+```text
+输入 A → 改 AB → AB 返回 → A 迟到
+计时开始 → 回调替换 → 计时完成
+source A → source B → A 已排队回调迟到
+点击开始任务 → 内容离开 → 再次进入
+```
+
+每条时序都写明确断言：当前结果属于 AB；计时未因仅回调变化而重置；旧账号结果不能污染新账号；注册与解绑对象配对；任务是否继续符合寿命要求。
+
+测试时控制 fake 源和协程调度，不用随意 sleep 等运气。虚拟时间能控制 delay，不代表真实网络和阻塞 native 任务已经停止；这些另做集成验证。方法见 [测试第 2–5 节](#/article/compose-testing?section=2)。
+
+到源码层，再把 effect 的身份记忆、成功应用、遗忘时取消或清理串起来。无需为记住 API 名称背一棵完整继承树；应能解释如果删掉 key、清理或最新值容器，前面的哪个实验会失败。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. 什么叫副作用？它和计算 UI 有什么区别？（回看第 1 节）
-2. LaunchedEffect 何时启动、取消和重启？（回看第 2 节）
-3. 搜索防抖、取消与过期结果怎样串起来？（回看第 6 节）
-4. 为什么 Effect 不能保证业务“恰好执行一次”？（回看第 9 节）
-5. 怎样验证重入、取消、释放与重复执行？（回看第 10 节）
+1. 为什么 Composable 函数体不能承担“业务恰好执行一次”的触发语义？（回看第 1 节）
+2. key 变化与回调更新有什么区别，什么时候选择重启，什么时候只读最新值？（回看第 2、3 节）
+3. DisposableEffect 怎样保证配对清理，为什么仍需考虑迟到回调？（回看第 4、7 节）
+4. produceState、snapshotFlow、derivedStateOf 分别连接什么数据方向？（回看第 5 节）
+5. 从搜索取消到付款幂等，哪些保证属于 UI 生命周期，哪些需要业务协议？（回看第 6、9、10 节）

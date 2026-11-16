@@ -1,3 +1,4 @@
+import { parseArticleRoute, articleSectionAnchor } from "../lib/article-route.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -41,7 +42,11 @@ test("reading paths, related articles and in-body links point to existing conten
   }
   for (const a of articles) {
     for (const id of a.related) assert.ok(ids.has(id), `${a.id} -> ${id}`);
-    for (const [, id] of a.markdown.matchAll(/\]\(#\/article\/([^)]*)\)/g)) assert.ok(ids.has(id), `${a.id} -> ${id}`);
+    for (const [, target] of a.markdown.matchAll(/\]\(#\/article\/([^)]*)\)/g)) {
+      const route = parseArticleRoute(`article/${target}`);
+      assert.ok(route && ids.has(route.id), `${a.id} -> ${target}`);
+      if (route.section !== undefined) assert.ok(articleSectionAnchor(articles.find(x => x.id === route.id).toc, route.section), `${a.id} -> ${target}`);
+    }
   }
 });
 
@@ -102,8 +107,10 @@ test("Compose stages map knowledge points to existing prose sections", () => {
     const stage = byId.get(stageId);
     const rows = [...stage.markdown.matchAll(/^\| [^\n]+ \| \[[^\]]+\]\(#\/article\/([^)]*)\) \| 第 ([\d、–]+) 节 \|$/gm)];
     assert.ok(rows.length > 0, `${stageId} needs a knowledge-to-section mapping`);
-    assert.deepEqual(new Set(rows.map(row => row[1])), new Set(readings));
-    for (const [, id, range] of rows) {
+    assert.deepEqual(new Set(rows.map(row => parseArticleRoute(`article/${row[1]}`).id)), new Set(readings));
+    for (const [, target, range] of rows) {
+      const { id, section } = parseArticleRoute(`article/${target}`);
+      assert.equal(section, Number(range.match(/\d+/)[0]));
       const lesson=byId.get(id);
       assert.equal(lesson.type, "学习文章");assert.equal(lesson.category, "compose");
       for(const n of range.match(/\d+/g).map(Number))assert.ok(n>=1 && n<=lesson.sectionCount, `${stageId}: ${id}/${n}`);
@@ -112,7 +119,7 @@ test("Compose stages map knowledge points to existing prose sections", () => {
   }
 });
 
-test("learning articles use concise prose and end with answerable interview review", () => {
+test("learning articles have ordered prose sections and final review (structure, not depth)", () => {
   for(const a of articles.filter(a=>a.type === "学习文章")) {
     const [body,review,...rest]=a.markdown.split("## 面试提炼\n");
     assert.equal(rest.length,0,a.id);assert.ok(review,a.id);

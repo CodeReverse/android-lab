@@ -1,4 +1,5 @@
 "use client";
+import { parseArticleRoute, articleSectionAnchor } from "@/lib/article-route";
 import {
   useEffect,
   useMemo,
@@ -256,9 +257,8 @@ function Lab({ readingMode, setReadingMode }: {
   const categoryPath = Object.entries(readingPaths).find(([, path]) => path.category === categoryId);
   const pathId = route === "paths" ? "compose" : route.startsWith("paths/") ? route.slice(6) : "";
   const selectedPath = readingPaths[pathId];
-  const article = route.startsWith("article/")
-    ? articles.find((a) => a.id === route.slice(8))
-    : undefined;
+  const articleRoute = parseArticleRoute(route);
+  const article = articles.find((a) => a.id === articleRoute?.id);
   useEffect(() => {
     if (!article || query) setReadingMode(false);
   }, [article, query, setReadingMode]);
@@ -698,6 +698,7 @@ function Lab({ readingMode, setReadingMode }: {
           ) : article ? (
             <ArticleView
               article={article}
+              section={articleRoute?.section}
               showOutline={outlineOpen && !readingMode}
               readingMode={readingMode}
               toggleOutline={toggleOutline}
@@ -1373,6 +1374,7 @@ function SettingRow({
 }
 function ArticleView({
   article: a,
+  section,
   showOutline,
   readingMode,
   toggleOutline,
@@ -1386,6 +1388,7 @@ function ArticleView({
   openArticle,
 }: {
   article: Article;
+  section?: number;
   showOutline: boolean;
   readingMode: boolean;
   toggleOutline: () => void;
@@ -1400,6 +1403,14 @@ function ArticleView({
 }) {
   const [tocOpen, setTocOpen] = useState(false);
   useEffect(() => { setTocOpen(false); }, [a.id, readingMode]);
+  useEffect(() => {
+    const anchor = articleSectionAnchor(a.toc, section);
+    if (!anchor) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(anchor)?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [a.id, a.toc, section]);
   const progress = state.progress[a.id];
   const pathReadings = Object.values(readingPaths).flatMap((path) => path.stages[a.id] || []);
   const relatedIds = [...new Set([...pathReadings, ...a.related])];

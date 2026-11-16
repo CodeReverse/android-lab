@@ -1,74 +1,152 @@
-## 1. 声明式 UI 的职责
+先做一个最小收藏页面：显示当前收藏状态，点击按钮提出切换意图。我们暂时不追 Snapshot 和 SlotTable，先把代码、界面结构、状态输入与工程环境连起来。遇到后续要展开的机制，会给出它在这里的职责和阅读链接。
 
-先做一个搜索页：点击搜索显示进度，成功后显示结果，失败时显示重试。若每个回调各自修改几个控件，很容易遗漏一种组合。Compose 的起点是把问题改成：给定当前页面状态，界面应该是什么样？
+示例使用 Android 上的 Compose 与 Material 3。代码用于教学，未在本仓库构建 Android 应用；本仓库本身是资料网站。依赖版本以你的 Android 工程为准，不把开发分支的最新实现当成所有项目的既定行为。
 
-Compose 用可组合函数描述界面随输入状态变化的关系。它提供运行时、UI、布局、交互等库；不是新的操作系统，也不替代 Activity、窗口、线程或系统图形管线。Android 上最终仍需要宿主接入平台生命周期和显示调度。
+## 1. 先把界面写成状态的函数
 
-对搜索页，传统写法容易分散为“收到结果改列表、请求开始显示 loading、失败再隐藏 loading”；声明式写法先定义页面状态，再从该状态描述界面。区别不在是否使用 XML，而在谁是 UI 真相来源。若同时手改 View、修改独立布尔值并维护另一份列表，换成 Compose 仍会产生状态不一致。
+传统命令式写法常在事件后分别改按钮文字、图标和标题。一旦失败回滚只更新了其中两个，页面就会互相矛盾。先尝试让它们只根据同一个输入计算：
 
-先用概念状态代替零散的控件命令：
-
-```text
-Idle              → 输入框和搜索按钮
-Loading(query)    → 输入框和加载提示
-Success(items)    → 输入框和结果列表
-Failure(message)  → 输入框和重试入口
+```kotlin
+@Composable
+fun FavoriteScreen(saved: Boolean, onToggle: () -> Unit) {
+    Column {
+        Text(if (saved) "文章已收藏" else "文章未收藏")
+        Button(onClick = onToggle) {
+            Text(if (saved) "取消收藏" else "收藏")
+        }
+    }
+}
 ```
 
-同一时刻选择一个主状态，就不会意外留下“成功结果已经出现，但首次加载的进度仍未隐藏”的组合。若刷新时需要保留旧结果，应明确设计带旧数据的刷新状态，而不是靠两个独立回调碰巧更新正确。
+依赖 Runtime 的 Composable、Foundation 的 Column、Material 3 的 Button/Text。`saved` 是输入，`onToggle` 是用户意图输出。调用 `FavoriteScreen(false, ...)` 和 `FavoriteScreen(true, ...)`，同一份描述根据不同输入得到不同内容。
 
-## 2. 组合、布局与语义结构
+点击 Button 并不会自动修改 saved，因为它是调用方传进来的值。应由状态所有者处理事件，再让 UI 读取新状态。这种分工允许上层加入服务器失败、乐观更新或权限判断，而不用让按钮自己取数据库。
 
-状态可以描述页面，却还没解释函数调用如何变成可见、可操作的按钮。要继续往下理解，不能把组合记录、布局节点和用户可访问的语义对象当成同一种结构。
+声明式不等于没有内部可变状态，也不等于所有东西每次都销毁重建。它首先改变的是业务表达方式：描述当前输入对应什么界面，运行时决定怎样复用已有内容。
 
-需要区分三个观察角度：组合分组记录调用身份和记忆值；LayoutNode 等 UI 节点承担测量、放置等工作；Semantics 向无障碍和测试暴露含义与动作。仅提供主题的函数可以没有自己的布局节点；一个按钮内部可以有多个布局节点，却对用户呈现一个可点击语义对象。
+为什么不是直接改 Text？因为当显示有多个来源时，统一输入更容易保持一致。简单静态界面使用传统 View 同样可以正确实现；是否迁移应比较工程成本，不能把 API 风格当成所有场景的性能证明。[声明式思维](https://developer.android.com/develop/ui/compose/mental-model)。
 
-判断层次问题时先问“我要观察的是状态保存位置、像素位置，还是用户能操作的元素”。在测试中找不到按钮里的文字，不足以证明布局里没有 Text；语义可能已合并。见[组件与语义](#/article/compose-components)和[测试正文](#/article/compose-testing)。
+## 2. 一段代码同时形成几种不同的结构
 
-## 3. 界面更新的三个阶段
+对上面的页面，源码调用看起来像一棵树。但我们至少需要从三个角度观察它：
 
-知道这些结构分别负责什么后，再考虑搜索结果到来时要改动哪些工作。新增一行、移动图标和修改颜色，虽然都表现为“画面变了”，执行成本却不相同。
+```text
+调用与记忆：FavoriteScreen → Column 内容 → Text / Button → Text
+布局：决定标题、按钮及按钮内部内容的尺寸与位置
+语义：用户能读到的收藏状态，以及一个可执行的按钮动作
+```
 
-组合决定有哪些内容以及参数；布局决定尺寸与位置；绘制产生绘制指令。一个 State 在哪一阶段被读取，会影响变化后需要重做哪类工作。它们不是“每帧必须全部执行”的流水账。
+第一种用于解释调用身份和状态保存；第二种用于解释像素几何；第三种用于解释读屏与测试如何操作界面。它们相关，但不要求节点一一对应。
 
-先用同一搜索页推演：结果条数改变可能改变内容结构；已有图片平移可能只改变位置或图层属性；进度圆环颜色改变可以只影响绘制。若连变化属于哪种工作都没分清，背诵 Composer 字段也不能解释为什么某次点击卡顿。详细链路见[重组与阶段](#/article/compose-phases)。
+例如再加一层 MaterialTheme：
 
-## 4. BOM、编译器与库版本
+```kotlin
+MaterialTheme {
+    FavoriteScreen(saved = false, onToggle = {})
+}
+```
 
-接下来准备自己跑一次最小页面。此时先固定工具和库版本，才能让后续看到的编译产物、源码与运行行为对应起来。
+主题主要向下提供环境，不应仅因为多调用一个函数就推断屏幕多了一个矩形。Button 内部又可能包含多层布局，而测试和读屏通常把它理解为一个合并后的可点击语义对象。
 
-BOM 用于协调所覆盖的 Compose 库版本，并不会自动加入全部库；Kotlin 与 Compose Compiler 插件是编译侧配置。Kotlin 2.0 起编译器迁入 Kotlin 仓库，插件版本随 Kotlin 对齐。不能只更新 BOM 后就声称编译器已经升级。[官方 BOM 说明](https://developer.android.com/develop/ui/compose/bom)、[编译器迁移说明](https://kotlinlang.org/docs/compose-compiler-migration-guide.html)。
+这种区分有实际诊断价值：测试找不到内部 Text，先查语义合并；按钮位置错了，查约束与放置；备注串项，查组合身份。用同一张“View 树”解释三类故障，很容易找错层。
 
-学习记录至少保存：Kotlin/Compiler、Runtime/UI/Foundation/Material、Lifecycle/Navigation、AGP/JDK、设备 API、构建类型与编译选项。不要把开发分支源码当作项目所用二进制的准确实现。下面文章的算法示意不依赖某个字段偏移；要验证字段和调用顺序，必须切换到对应发布 tag 或 commit。
+组合身份在 [SlotTable 第 1–5 节](#/article/compose-slots?section=1) 展开；语义查询在 [测试第 1 节](#/article/compose-testing?section=1) 展开。这里先记住每种结构解决哪一个问题。[语义树说明](https://developer.android.com/develop/ui/compose/accessibility/semantics)。
 
-## 5. 按执行链阅读源码
+## 3. 输入变化以后，不是每层都从头重做
 
-工程能运行后，不必立刻钻进整个 Runtime。沿“结果写入状态后为何显示出来”这一个问题追踪，才能给每个源码入口安排清楚的职责。
+让页面真正拥有一份状态：
 
-先选择一个问题，例如“切换筛选条件后为什么 remember 重建”。写出最小输入及预期，再定位 API 入口、状态持有者、失效通知和执行方。记录每一步是公共契约、源码观察还是自己的假设。阅读顺序可用：mutableStateOf → Snapshot 状态读写 → Composition 的依赖记录 → Recomposer 调度 → Composer 执行 → Applier 应用节点操作。
+```kotlin
+@Composable
+fun FavoriteDemo() {
+    var saved by remember { mutableStateOf(false) }
+    FavoriteScreen(saved = saved, onToggle = { saved = !saved })
+}
+```
 
-每一步只回答一个问题，并保留版本。经典 SlotTable 的数组和 gap buffer 只解释某条实现路线；发布说明中存在新的实验实现记录，不能把旧布局当永久规范。学习共同的身份与复用语义，再比较存储成本。[Runtime 发布记录](https://developer.android.com/jetpack/androidx/releases/compose-runtime)、[经典设计说明](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/compose/runtime/design/how-compose-works.md)。
+这段还需要 `remember`、`mutableStateOf`、`getValue/setValue` imports。先给它们最少职责：MutableState 提供可观察读写，remember 让同一组合身份重新执行时找回对象，by 把读写转给状态容器。为什么要组合使用，在 [State 第 1–4 节](#/article/compose-state?section=1) 逐步试错，这里不提前塞入全部内部机制。
 
-## 6. 最小页面验证
+点击的流程可以手工走一遍：
 
-读完这条链，回到最初的搜索页做最小验证。目标是能解释每次变化属于哪一层，以及为何发生，而不只是能把组件画出来。
+```text
+用户点击 → onToggle → saved 写入 true
+已有读取关系使相关工作失效
+再次描述所需内容 → 标题和按钮采用新的文字
+如果内容尺寸变化 → 需要相应布局与绘制
+```
 
-给自己三个任务：画出一个按钮的组合/布局/语义关系；解释“普通变量变化、可观察 State 变化、参数变化”的不同；把一次搜索结果返回写成状态到显示的时序。若只能说“Compose 自动刷新”，就回到[状态正文](#/article/compose-state)。
+组合回答“有哪些内容和参数”；布局计算尺寸与位置；绘制生成画面内容。修改一个只在绘制回调读取的颜色，可能无需重新组合；修改文字通常又与文本测量相关。
 
-实验设计：同一页面分别记录函数执行、布局、绘制，改变列表结构和颜色，比较触发范围。日志计数不能直接当帧耗时，也不能把函数执行次数视作用户看到的刷新次数。实际运行结果由读者在自己的 Android 工程中采集，本网站只提供资料与推演。
+所以“刷新了”只是用户看到的结果。排障时要进一步说清组合、测量、放置还是绘制发生了什么。源码函数执行日志，也不自动等于一帧已经呈现。[阶段与读取位置](#/article/compose-phases)用移动圆点做完整对照。
 
-## 继续阅读与源码入口
+## 4. 工程配置需要对齐编译侧与运行侧
 
-- [声明式思维](https://developer.android.com/develop/ui/compose/mental-model)：读重执行和副作用边界，解释为什么 UI 描述不能混入支付提交。
-- [阶段](https://developer.android.com/develop/ui/compose/phases)：读阶段内状态读取，画出颜色、位置、结构三个分支。
-- 下一篇：[组件、主题与依赖边界](#/article/compose-components)。
+理解页面以后，准备在自己的 Android 工程验证。先列需要什么，而不是从网上复制一组互相不兼容的版本号：
+
+| 配置层 | 职责 | 缺失或混用的典型后果 |
+| --- | --- | --- |
+| Android Gradle Plugin、JDK、SDK | Android 编译、打包与平台能力 | 构建环境或 API 范围不满足 |
+| Kotlin 与 Compose Compiler 插件 | 将可组合源码转换为协议 | 编译配置失败或产物规则不同 |
+| Runtime、UI、Foundation、Material 3 | 状态、UI 基础、布局与组件 | API 不存在或库组合不匹配 |
+| Activity Compose | 将组合内容接入 Android 宿主 | 没有相应 setContent 扩展 |
+| BOM | 协调其覆盖的一组 Compose 库版本 | 不等于自动添加库或升级 Kotlin 插件 |
+
+Kotlin 2.x 项目通常应用与 Kotlin 对齐的 Compose Compiler 插件。下面只演示依赖关系，前提是 version catalog 已定义相应 aliases：
+
+```kotlin
+dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.activity.compose)
+}
+```
+
+`libs...` 不是 Gradle 内建变量：catalog 需要将它们映射到真实坐标和已选版本。Material 3 常见坐标为 `androidx.compose.material3:material3`，Activity 为 `androidx.activity:activity-compose`；BOM 不能代替 Activity 等独立依赖的版本管理。
+
+宿主通常在 ComponentActivity.onCreate 中用 activity-compose 的 setContent 接入 MaterialTheme 与 FavoriteDemo。UI 线程、窗口和 Activity 生命周期仍然存在，Compose 并没有替换这些平台职责。
+
+记录可复现环境时至少保存 Kotlin/Compiler、各库、AGP/JDK、设备 API 和构建类型。要研究源码，先从实际依赖版本定位，不能拿滚动开发分支与旧项目逐行对照后宣称行为一致。[BOM 的职责](https://developer.android.com/develop/ui/compose/bom)、[编译器迁移配置](https://kotlinlang.org/docs/compose-compiler-migration-guide.html)。
+
+## 5. 让一个未解现象决定源码阅读路线
+
+假设按钮能正常工作，你现在想知道“没有注册监听，为什么写入会让标题变化”。不要从 Runtime 目录第一行开始读，可以先写出待验证的职责链：
+
+```text
+状态读写入口 → 记录哪个范围读过它 → 有效变化通知
+→ 相关组合工作失效 → 协调执行 → 应用到目标节点
+```
+
+从 MutableState 的 getter/setter 进入能解释第一步；Snapshot 解释版本和观察入口；组合与调度层再解释后面的执行。哪一步没有证据，就将它保留为假设，去找对应入口。
+
+如果问题换成“列表头插后备注换人”，链路重点应转到调用身份、key 和记忆记录，而不是继续研究 setter。若问题是“父参数没变为什么子还运行”，应检查直接状态失效和编译协议。
+
+| 眼前疑问 | 继续阅读 |
+| --- | --- |
+| 同一 State 为什么能有不同可见值 | [Snapshot 第 3–5 节](#/article/compose-snapshot?section=3) |
+| remember 保存在哪里，重排怎样匹配 | [组合结构第 2–7 节](#/article/compose-slots?section=2) |
+| 哪些运行时代码由编译器补入 | [编译器第 1–3 节](#/article/compose-compiler?section=1) |
+| 失效怎样转成组合或布局工作 | [刷新第 2、6 节](#/article/compose-phases?section=2) |
+
+这不是要求先学会所有底层再写页面，而是为遇到的具体问题准备可继续深入的入口。理解应沿因果推进，不按源码文件大小衡量。
+
+## 6. 用一个最小页面检查基础模型
+
+第一轮 Spike 只保留一个按钮，不接网络和导航。先画出输入、事件与状态所有者，再执行三组对照：
+
+1. 直接给 FavoriteScreen 固定 false：点击会输出事件，但输入不会自行变化。
+2. 在外层用可观察状态并更新：标题与按钮都应由同一新值驱动。
+3. 把状态改成普通局部变量：预测为什么普通赋值没有建立相同通知，以及创建位置重执行后为什么会初始化。
+
+第三项的完整修复过程在 State 样章，不需要在这里再背一遍最终写法。继续把按钮放到两处，检查两份独立状态与共享状态的区别，就能知道自己是否真正理解了所有权。
+
+再换字号、主题与父宽度，观察哪些是输入逻辑、哪些是布局问题。用测试工具查看语义树，确认用户动作可被识别。不要把 Preview 能显示当作宿主恢复、请求取消和系统输入都已正确。
+
+这一轮的完成标准是能解释“值从哪里来、事件往哪里去、哪种结构负责当前问题”。后续进入 [组件与主题](#/article/compose-components)，再系统读 State；不必因为暂时说不出内部类字段就回头死记 Runtime 全貌。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Compose 是什么，它替换了 Android 的哪一层？（回看第 1 节）
-2. 一次 Composable 调用会产生一个 View 吗？（回看第 2 节）
-3. BOM、Kotlin 插件与 Runtime 是同一个版本吗？（回看第 4 节）
-4. 如何开始一个可解释的源码阅读，而不是从文件第一行往下看？（回看第 5 节）
-5. 第一轮复习做到什么程度才算有基础？（回看第 6 节）
+1. 声明式 UI 改变的是哪一种职责分配，点击为什么不自动修改传入参数？（回看第 1 节）
+2. 组合、布局与语义结构为什么不能一一对应？（回看第 2 节）
+3. 一次状态变化为什么不必执行全部阶段？（回看第 3 节）
+4. Kotlin/Compiler、Runtime 与 BOM 各控制什么，如何固定验证环境？（回看第 4 节）
+5. 怎样由一个可复现现象组织源码阅读和最小实验？（回看第 5、6 节）

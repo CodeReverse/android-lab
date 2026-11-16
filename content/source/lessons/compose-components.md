@@ -1,77 +1,200 @@
-## 1. 状态与事件驱动的组件
+把搜索结果行复用到收藏页时，如果它自己创建 ViewModel、读取账号并导航，就得把整个搜索页面一起搬过去。本篇从这个复用困难出发，把状态、事件、Modifier、主题和环境依赖逐步放到合适位置。
 
-搜索页能显示结果以后，我们想把结果行复用到收藏页。可结果行如果自己取 ViewModel、读账号、做导航，一搬过去就需要带上整个页面环境。先从这个复用困难出发，确定组件真正需要哪些输入、应该向外报告什么动作。
+前置：[最小声明式页面](#/article/compose-foundations)。示例用 Material 3 与 Foundation，省略通用 imports；业务 Article、仓储与资源文件按示例说明提供。代码是教学片段，未在 Android 工程执行。
 
-按状态所有权和交互职责拆分。SearchRoute 接入 ViewModel；SearchScreen 接收 UiState 与事件；SearchBar 接收 query/onQueryChange；ResultRow 接收文章和收藏动作。纯展示组件不要自己获取账户、数据库和路由控制器，否则 Preview 和测试必须搭建整个应用。
+## 1. 先拆输入与事件，再讨论拆成几个函数
 
-页面状态要能表达正在加载、空结果、失败、成功，以及“旧数据仍可展示但正在刷新”。不要用互不约束的 loading/error/empty 三个 Boolean 产生矛盾组合。表单输入、列表结果、对话框可见性也不必全部由同一个持有者拥有：谁消费、谁修改、寿命多长，决定边界。
-
-组件签名可以先收敛到这样的边界：
+最初可以把一行所需内容全部写在页面里。但它搬到收藏页后还应该能使用。先让行只接受显示所需的值与动作：
 
 ```kotlin
 @Composable
 fun ArticleRow(
     title: String,
-    isSaved: Boolean,
+    saved: Boolean,
+    onOpen: () -> Unit,
     onToggleSaved: () -> Unit,
     modifier: Modifier = Modifier
-) { /* 根据输入绘制，并在点击时调用回调 */ }
+) {
+    Row(modifier = modifier.clickable(onClick = onOpen)) {
+        Text(title, modifier = Modifier.weight(1f))
+        TextButton(onClick = onToggleSaved) {
+            Text(if (saved) "取消收藏" else "收藏")
+        }
+    }
+}
 ```
 
-这里没有第二份本地 `isSaved`。点击先发出事件，上层决定是否乐观更新；请求失败时也由同一个状态拥有者恢复结果。组件因此能被 Preview、收藏页和搜索页分别驱动。
+RowScope 中的 weight 表达标题使用分配给它的剩余空间；这里不是让 ArticleRow 自己决定全页布局。onOpen 和 onToggleSaved 把意图交给调用方，行组件不需要知道具体导航控制器或数据库。
 
-## 2. 基础组件的使用约束
+为什么不在行内再 remember 一个 saved？上层收藏结果与本地副本可能互相矛盾：服务器拒绝后，上层改回 false，行里仍显示 true。只有一份权威状态，回滚就沿相同数据流到达所有消费者。
 
-组件边界明确后，点击收藏应如何流动？让行组件报告用户意图，让状态拥有者处理业务，再把新状态送回来，才能避免每个组件各自保存一份收藏结果。
+局部临时状态仍可以保留，比如提示气泡是否展开；它与服务端收藏结果的寿命、所有者不同。组件拆分的依据是职责、复用和状态边界，不是每十行代码必须提取一个函数。
 
-Text 负责显示，输入组件还要处理编辑状态；Button 把点击与语义包装在一起；Image 需要有意义的描述或明确声明为装饰；Dialog 的开关来自状态；Scaffold 组织顶栏、底栏和内容槽位，内容需要正确处理传入的 padding。列表与网格应按数据规模选择普通布局或 Lazy 布局。
+Route 层可以取 ViewModel、收集状态和连接导航，Screen/Row 则接收输入。状态提升的完整取舍见 [State 第 5、7 节](#/article/compose-state?section=5)。
 
-具体推演：点击收藏先发出 ArticleId 事件，业务层决定乐观更新或等待服务端；UI 展示由新状态驱动。若行组件自己维护一份 isSaved，又从上层接收另一个 isSaved，就必须解决两个真相源冲突。组件 API 宜提供事件而不是暴露业务协程作用域，让调用方承担提交、重试和失败回滚。
+## 2. 用状态模型避免不可能的界面组合
 
-## 3. Modifier 的顺序和作用域
+搜索页还要显示加载、失败、空结果。三个独立 Boolean `loading/error/empty` 能组合出“同时首次加载、错误、空成功”，其中很多状态没有产品意义。
 
-数据流正确还不够。调用方传入 padding 和点击行为时，希望它们作用到整个结果行，而不是某个内部图标；这就要求组件约定好 Modifier 的位置与顺序。
+先用一个只处理首次请求的最小模型：
 
-Modifier 链表达包裹和参与行为的顺序，不是无序属性表。假设一个文字区域外有 padding：先 clickable 后 padding，点击行为包裹了 padding 后的内容；先 padding 后 clickable，点击行为位于内层，边缘留白的命中范围不同。背景、裁剪与绘制同样受相对位置影响。验证时同时观察尺寸、像素和触摸，不能只看截图。[Modifier 契约](https://developer.android.com/develop/ui/compose/modifiers)。
+```kotlin
+sealed interface SearchResult {
+    data object Idle : SearchResult
+    data object Loading : SearchResult
+    data class Ready(val titles: List<String>) : SearchResult
+    data class Failed(val message: String) : SearchResult
+}
 
-对外组件通常提供 `modifier: Modifier = Modifier`，应用到负责整体布局的根节点。不要偷偷把它只作用到内部图标，也不要在每层重复使用导致点击和 padding 叠加。weight 等父数据修饰符还依赖对应布局作用域；函数签名应表达这种限制。
+@Composable
+fun ResultBody(result: SearchResult, onRetry: () -> Unit) {
+    when (result) {
+        SearchResult.Idle -> Text("输入关键词开始搜索")
+        SearchResult.Loading -> CircularProgressIndicator()
+        is SearchResult.Ready -> {
+            if (result.titles.isEmpty()) Text("没有匹配结果")
+            else Column { result.titles.forEach { Text(it) } }
+        }
+        is SearchResult.Failed -> Column {
+            Text(result.message)
+            Button(onClick = onRetry) { Text("重试") }
+        }
+    }
+}
+```
 
-## 4. 主题、国际化与无障碍
+空结果由 Ready 的空列表推导，而不是另一份需要同步的标记。`when` 覆盖模型分支，也迫使新增状态时重新检查 UI。
 
-点击区域合理后，再把结果行放进深色模式、大字体和读屏环境。组件的契约不仅包括像素布局，还包括用户能否理解并完成“打开文章”和“切换收藏”这两种动作。
+这个模型还没表达“保留旧数据同时刷新”。新需求出现时，可在拥有数据的状态中加入明确刷新状态，而不是退回任意 Boolean 拼接。要处理刷新失败仍展示旧数据，也要明确错误提示属于刷新过程还是整页结果。
 
-颜色、字重、字号和形状应通过主题语义表达，避免在每个页面复制常量。深色模式不仅是背景变黑，还涉及内容对比、禁用态和图片可辨性。文本使用资源和复数规则，布局支持长文本、字号缩放及 RTL；start/end 通常比硬编码 left/right 更能表达排版意图。
+基础组件应匹配语义：显示文本用 Text，编辑用 TextField，标准操作优先 Button。Scaffold 是组织槽位的布局，不会让内容自动正确处理所有边距：
 
-搜索结果行若整行可点击，内部收藏又是独立动作，应让读屏用户区分“打开文章”和“切换收藏”，包含可理解标签、选中状态与合理触达区域。纯装饰图标无需重复朗读文字；业务图标则不能省掉含义。语义树是交互契约，不是为了测试才追加的标签。[语义说明](https://developer.android.com/develop/ui/compose/accessibility/semantics)。
+```kotlin
+Scaffold { contentPadding ->
+    ResultBodyContainer(Modifier.padding(contentPadding))
+}
+```
 
-## 5. CompositionLocal 的依赖边界
+ResultBodyContainer 是本例内容占位组件。关键是消费宿主给出的 padding；若内部又自行重复处理同一 Insets，就会多出留白。大数据量不能沿用上面的演示 Column 全量组织，进入 [Lazy 教程](#/article/compose-lazy) 再扩展。
 
-主题、密度等信息每层传参很繁琐，于是会用到隐式环境。但不能因此把账号、路由和 ViewModel 也全部藏进去，否则刚解决的复用困难又回来了。
+## 3. Modifier 顺序表达包裹关系
 
-它为组合子树提供隐式依赖，适合主题、密度、布局方向等跨层环境。优点是减少机械传参；代价是依赖不再直接出现在函数签名里，复用组件需要知道额外环境。业务行组件若隐式读取整个页面 ViewModel，换页面或测试时就容易失败。
+现在给行加边距和点击，为什么换一下顺序行为就变了？先把链看作逐层包裹，而不是一个无序 CSS 属性对象。
 
-`compositionLocalOf` 会跟踪读取，值变化关联其消费者；`staticCompositionLocalOf` 不做同样的逐读跟踪，提供值变化会重组提供内容区域，适合很少变化的值。选择不能只看 static 这个名字，以实际变化频率与影响范围判断。[CompositionLocal 官方解释](https://developer.android.com/develop/ui/compose/compositionlocal)。对公共组件优先显式传入必要业务输入，确有环境含义再使用 Local。
+```kotlin
+Modifier.clickable(onClick = onOpen).padding(16.dp)
+Modifier.padding(16.dp).clickable(onClick = onOpen)
+```
 
-## 6. Preview 与组件验证
+第一种 clickable 在外层包裹带 padding 的内容；第二种先留出外层空间，clickable 在内层。绘制背景作辅助，更容易观察边界：
 
-现在结果行只依赖明确的业务输入和有限环境，就可以独立验证。先看各种静态状态能否正确显示，再检验点击产生什么事件，以及动态竞争是否由状态层处理。
+```kotlin
+Modifier.background(Color.LightGray).padding(16.dp)
+Modifier.padding(16.dp).background(Color.LightGray)
+```
 
-Preview 适合发现长标题、空数据、深浅色、大字号的布局问题，不证明网络、宿主生命周期、IME 和系统恢复都正确。纯 UI 接收固定 UiState，分别预览加载、失败、成功、刷新旧数据；事件用可替换回调，避免预览发真实请求。
+在相同父约束下，前者背景覆盖内部留白，后者背景只作用在留白内侧的内容范围。点击还涉及最小触达目标等机制，不能只根据背景像素测出所有实际命中边界；应配合触摸测试。
 
-推演一条失败路径：用户输入新关键词，旧请求返回，页面不能变回旧词结果；这属于状态机验证，不是 Preview 能覆盖的静态外观问题。再用[测试正文](#/article/compose-testing)检查点击输出、语义和恢复，使用[输入正文](#/article/compose-input)验证键盘与焦点。组件拆得更多也不自动更快，应基于状态读取边界与测量证据评估。
+组件对外提供 modifier 时，调用者通常期待它作用于组件整体。如果 ArticleRow 只把 modifier 贴在内部 Text 上，调用方的 padding、尺寸或测试标识就偏离契约。也不要把同一 modifier 在根和每个子节点重复使用。
 
-## 参考资料的阅读目标
+weight 等父数据修饰符不是任何位置都有效。它传递的是供特定父布局解释的信息；在错误作用域或错误父子关系下，不能仅凭链里存在 weight 就推断分配成功。
 
-- [Material 3 主题](https://developer.android.com/develop/ui/compose/designsystems/material3)：用语义颜色和字体角色设计上述状态。
-- [Preview](https://developer.android.com/develop/ui/compose/tooling/previews)：建立尺寸、语言、字体和主题变体，而非只做一张正常页面截图。
-- [状态提升](https://developer.android.com/develop/ui/compose/state-hoisting)：继续回答状态到底归组件还是页面。
+进一步把约束逐层画出来见 [布局第 1、2 节](#/article/compose-layout?section=1)。[Modifier 顺序与作用域](https://developer.android.com/develop/ui/compose/modifiers)。
+
+## 4. 主题与语义让同一组件适应不同用户
+
+行已经能复用，但硬编码黑字白底在深色模式下可能失去对比。应优先使用主题中的语义角色：
+
+```kotlin
+Text(
+    text = title,
+    color = MaterialTheme.colorScheme.onSurface,
+    style = MaterialTheme.typography.bodyLarge
+)
+```
+
+onSurface 描述放在 surface 上的内容角色，不是“所有文字永远用这一色”。错误提示、禁用与选中状态应有各自适用角色。主题调整集中管理，也避免每个组件重新判断深色模式。
+
+同样，字符串应来自资源而不是在所有代码里写中文。复数、格式化参数和 RTL 需要资源与布局一起设计；start/end 能表达阅读方向，left/right 是物理方向。
+
+收藏动作除了外观，还要能被读屏和键盘理解。若用选择组件表达，可以显式把标签和状态交给语义：
+
+```kotlin
+Checkbox(
+    checked = saved,
+    onCheckedChange = { onToggleSaved() },
+    modifier = Modifier.semantics {
+        contentDescription = "收藏文章" // 产品代码换成已解析的本地化字符串
+    }
+)
+```
+
+Checkbox 已有选择状态的标准语义，不必再添加互相矛盾的手工状态。整行打开文章与内部收藏是两个动作，应分别验证可达性，不应让读屏只读到一个含糊的“按钮”。如果使用带文字的控件，避免重复添加相同描述导致重复朗读。
+
+字号增大和长标题会改变测量；仅颜色适配无法解决裁切。下一步用 Preview 与语义测试检查这些变化。[Material 3 主题](https://developer.android.com/develop/ui/compose/designsystems/material3)、[语义](https://developer.android.com/develop/ui/compose/accessibility/semantics)。
+
+## 5. 环境依赖可以隐式传递，业务输入保持可见
+
+标题、收藏值通过参数传入很清楚，但每一层都传颜色、密度和间距会很繁琐。CompositionLocal 允许某个组合子树提供环境，让深处消费者读取最近的提供值。
+
+以自定义间距为例：
+
+```kotlin
+data class AppSpacing(val small: Dp = 8.dp, val content: Dp = 16.dp)
+val LocalAppSpacing = staticCompositionLocalOf { AppSpacing() }
+
+@Composable
+fun CompactArea(content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalAppSpacing provides AppSpacing(small = 4.dp, content = 8.dp)
+    ) { content() }
+}
+
+@Composable
+fun SpacedTitle(title: String) {
+    Text(title, Modifier.padding(LocalAppSpacing.current.content))
+}
+```
+
+同一个 SpacedTitle 放在 CompactArea 内外，会读取不同环境。提供值沿组合范围生效，不是进程全局单例；离开该提供范围，会回到外层值。
+
+为什么例子使用 staticCompositionLocalOf？间距通常很少变，这类提供方式不做同样的逐读跟踪，提供值改变会使对应内容区域重组。compositionLocalOf 则跟踪读取，以消费者关系响应变化。static 不是“永远不更新”，也不能只凭名字断言它更快。
+
+把 ViewModel 整个放进 Local 虽然省参数，却让 ArticleRow 隐式依赖页面环境，Preview 和跨页面复用又回到起初的困难。评审时问：这是环境属性，还是具体业务输入？只有为了绕过正常参数传递而新增 Local，通常应先重新看组件边界。
+
+代价包括依赖不在函数签名里显现、默认值设计和测试环境构造。工具不是禁止使用隐式依赖，而是要求隐式的理由清楚。[CompositionLocal 契约与选择](https://developer.android.com/develop/ui/compose/compositionlocal)。
+
+## 6. 用同一个组件做静态与动态验证
+
+纯 UI 的价值可以立刻体现在 Preview：
+
+```kotlin
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+fun ArticleRowPreview() {
+    MaterialTheme {
+        ArticleRow(
+            title = "一篇很长的文章标题，用于观察换行和按钮空间",
+            saved = true,
+            onOpen = {},
+            onToggleSaved = {}
+        )
+    }
+}
+```
+
+需要 tooling-preview，预览宿主应提供主题与自定义 Local。这里传固定输入和空回调，不从 Preview 发真实网络请求。分别观察加载、空结果、失败、长文本、深浅色、RTL 和大字体，但无需为每个内部 Box 创建一张截图。
+
+本例固定输入的 Preview 用于检查该状态的外观，不能证明事件交给了正确文章。工具也支持交互或动画预览，但这仍不能替代对业务数据流、恢复和宿主行为的验证。下一层组件测试记录 onToggleSaved，再由集成测试验证状态层成功或失败后输出什么。不要要求无状态行点击后自己修改传入 saved。
+
+Spike 可以先删除所有 ViewModel 与导航依赖，仅用固定数据展示行；如果仍必须启动整个应用，说明组件边界还没有真正独立。反过来，也不要为了“纯粹”拆出大量没有复用和职责价值的小组件。
+
+测试同步、语义合并和恢复的具体代码在 [测试教程](#/article/compose-testing)。这一步完成后，应能从输入和环境解释组件外观，从事件解释业务如何接入，而不必猜内部隐藏了哪个单例。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. 怎样把一个页面拆成可复用组件？（回看第 1 节）
-2. 基础组件应该掌握哪些使用约束？（回看第 2 节）
-3. 主题、国际化和无障碍为什么不能留到最后补？（回看第 4 节）
-4. CompositionLocal 应该放什么，为什么不把 ViewModel 都塞进去？（回看第 5 节）
-5. Preview 能证明页面正确吗，怎样设计组件验证？（回看第 6 节）
+1. 状态与事件怎样帮助组件复用，什么局部状态仍可保留？（回看第 1 节）
+2. sealed 状态模型避免了哪些矛盾，刷新旧数据的新需求怎样加入？（回看第 2 节）
+3. Modifier 为什么有顺序，调用方传入的 modifier 应作用在哪里？（回看第 3 节）
+4. 主题、无障碍和 CompositionLocal 各解决什么，隐式业务依赖的代价是什么？（回看第 4、5 节）
+5. Preview 通过以后还有哪些行为必须用其他验证方式证明？（回看第 6 节）

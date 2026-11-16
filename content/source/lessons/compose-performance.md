@@ -1,80 +1,156 @@
-## 1. 从用户体验定义瓶颈
+## 1. 先把卡顿变成可反驳的陈述
 
-用户说“搜索时很卡”，开发日志却显示重组次数不多。两者并不矛盾：慢的是输入反馈、首次结果、滚动，还是图片出现？在优化代码前，先把抱怨转成可复现的交互和明确的时间区间。
+搜索框每输入一个字，结果列表就顿一下。团队看到重组次数不少，于是准备给所有模型加 `@Stable`。这一步跳得太快：可能是排序，也可能是文本测量、锁等待或 GPU 合成。重组计数只告诉我们某段代码被重新执行，没告诉我们用户为什么等。
 
-先描述用户动作和失效条件：首次进入搜索页慢、滚动掉帧、输入延迟，还是内存持续增长。重组次数只是工作量线索，不是用户体验指标。一次昂贵测量可能比许多廉价重组更慢，GPU 压力也不会因主线程重组计数下降自动消失。
+先把问题改写成具体路径：“固定五千条本地结果，在低端目标设备上连续输入 compose，文字反馈与结果更新出现可见停顿。”把两个时间区间分开：按键到输入框新字符可见，查询变化到对应结果可见。把耗时排序移到后台，可能改善前者，却仍让后者很慢；两者都需要报告。
 
-确定设备档位、刷新率、构建模式、数据规模、图片缓存、温度和交互脚本。60Hz 与 120Hz 的帧间隔不同，不能统一用“超过 16ms”判定全部场景。记录帧完成和呈现相关指标，并区分主线程忙、调度等待和渲染侧延迟。
+同时固定构建类型、设备、刷新率、数据集、图片缓存和温度条件。60Hz 帧间隔约 16.7ms，120Hz 约 8.3ms，但帧预算还涉及调度和呈现时间，不能只用一个主线程函数是否超过 16ms 判断全部掉帧。
 
-## 2. 逐层定位执行成本
+本篇围绕一个假设案例推导，不包含实际设备跑分。技术 Spike 的目标不是证明“Compose 应该很快”，而是回答：哪个环节主导了这条交互路径，改动后是否在同等条件下改善，而且没有把工作或错误转移到别处。
 
-明确了用户等待的区间，才知道 trace 中该看哪一段。接下来沿输入、主线程工作、渲染到呈现逐层排查，避免把所有耗时都归到可组合函数。
+## 2. 沿一次输入定位重复排序
 
-先稳定复现，再用系统 trace 观察输入到目标帧的关键区间。把主线程长段与组合、测量、绘制、业务计算及 I/O 对齐；再查看 RenderThread/GPU 和调度。Layout Inspector 帮助观察结构与重组，compiler reports 帮助解释跳过资格，二者都不能单独证明耗时根因。
+假设页面有这段代码，`articles` 为不可变文章列表，`query` 为搜索词，`descending` 控制排序：
 
-原创案例：搜索每输入一个字就卡。若 trace 显示在组合函数里排序五千项，应把排序移到合适的数据处理层并缓存正确输入；若长段在文本测量，则评估展示数量、布局约束与更新粒度；若在锁等待，则回到持锁线程分析。不能见到 Compose 页面就把所有阻塞归为 Runtime。
-
-以下是假设性的诊断记录，不是跑分：
-
-```text
-动作：输入一个字符
-观察：主线程在结果排序处长时间运行
-假设：组合内反复排序扩大了输入反馈延迟
-改动：按真正的数据依赖计算结果，避免无关重组重复排序
-复查：相同数据和输入下，排序次数、输入延迟、结果正确性
+```kotlin
+@Composable
+fun SearchResults(articles: List<ArticleUi>, query: String, descending: Boolean) {
+    val matched = articles.filter { it.title.contains(query, ignoreCase = true) }
+    val sorted = if (descending) matched.sortedByDescending { it.updatedAt }
+                 else matched.sortedBy { it.updatedAt }
+    ArticleList(sorted)
+}
 ```
 
-如果排序移到后台后结果乱序覆盖，或首次结果明显更慢，不能只用“主线程耗时下降”宣布完成。收益必须回到最初的用户动作上判断。
+函数每次执行就过滤、排序。若另一个无关参数变化导致此范围重新执行，即使列表与查询不变，也再次付出计算和分配成本。五千项排序通常包含约 `n log₂n` 量级比较，但实际耗时还取决于比较器、字符串、分配与设备，不能只从复杂度宣布它一定是瓶颈。
 
-## 3. 优化手段与对应证据
+先在目标构建采集系统 trace，在业务计算周围增加有意义的 trace section；将输入时间点、主线程计算、组合、测量、RenderThread 与目标帧对齐。若主线程主要处于 Running 且热点落在排序，可支持重复计算假设；若长时间等待锁，则需追持锁线程；若 CPU 已结束而呈现迟到，还需看渲染与调度。
 
-定位到热点后，每个优化都应对应一个具体原因。若问题来自排序，改 stable 注解没有用；若只需移动图标，却在组合读高频偏移，就应检查读取阶段。
+```text
+输入到达
+  → query 更新
+  → SearchResults 执行
+  → filter / sort [自定义 trace 区间]
+  → Lazy 项更新与测量
+  → 绘制、RenderThread、呈现
+```
 
-| 候选改动 | 先看到什么 | 必须保留的语义 |
-| --- | --- | --- |
-| 延迟读取到放置/绘制 | 高频值只改变位置/颜色，却触发组合 | 尺寸、点击区域与布局关系 |
-| derivedStateOf | 输入高频变化但 UI 只关心低频结果 | 阈值边界和新依赖仍被观察 |
-| 正确 key/contentType | 列表重排重做或状态错位 | 业务身份与编辑草稿 |
-| 记忆昂贵计算 | 同一输入重复执行明显热点 | keys 包含全部实际依赖 |
-| 改善图片与图层策略 | 解码、纹理上传或合成占主要成本 | 清晰度、裁剪及混合结果 |
+Layout Inspector 的重组/跳过计数辅助定位范围，编译器报告解释参数与跳过资格，系统 trace 才能把它们放到时间轴上。调试构建和 Inspector 观测本身有开销，发现线索后应在接近发布的构建复核。工具入口见 [Compose 性能](https://developer.android.com/develop/ui/compose/performance)。
 
-这些是待证实的假设，不是一组必须全部添加的技巧。修改一项后对照同条件 trace，避免同时改变数据量和缓存，导致收益归因错误。[性能建议](https://developer.android.com/develop/ui/compose/performance/bestpractices)。
+## 3. 从缓存正确输入到移动计算边界
 
-## 4. 稳定性契约与正确性
+若确认同一输入被反复计算，最小改动是按真实依赖记忆结果：
 
-某些改动会让执行次数显著下降，却可能是状态根本不再更新。为了防止把错误当收益，讨论跳过与稳定性时必须同时验证显示正确性。
+```kotlin
+val sorted = remember(articles, query, descending) {
+    val matched = articles.filter { it.title.contains(query, ignoreCase = true) }
+    if (descending) matched.sortedByDescending { it.updatedAt }
+    else matched.sortedBy { it.updatedAt }
+}
+```
 
-标注稳定性是一份行为承诺，不会把普通 var 自动变为可观察值。若数据原地变更但参数比较认为未变，跳过可能使 UI 留在旧值。优化前应先建立正确状态模型；查看报告后再处理确有必要的比较和推断问题。
+这里省掉的是无关重组的重复计算，不是第一次查询的成本。三个 key 缺一不可：忘记 descending 会让切换排序无效；原地修改普通 List 后继续传同一对象，也可能复用旧结果。缓存需要完整输入和正确的变化表达，不能把 `remember` 当成自动依赖追踪器。
 
-强跳过改变某些参数的比较方式，因此需要记录 Kotlin/Compiler 与开关条件；不能混用旧教程的结论。验证必须包含“同实例内部改变、新实例内容相同、新实例内容改变”三组，以及直接 State 失效。具体见[编译器正文](#/article/compose-compiler)。
+如果每个新查询本身也很昂贵，就要移动到状态处理层，并决定取消规则。以下是 ViewModel 中的教学管道：输入为可观察 query、sort 与不可变 articles Flow，`rankingDispatcher` 应可注入，CPU 工作使用 Default 类调度器；需要项目的 kotlinx.coroutines 依赖，`mapLatest` 按所用版本添加必要 opt-in。
 
-## 5. 基准测试与 Baseline Profiles
+```kotlin
+val results = combine(query, sortDescending, articles) { q, desc, rows ->
+    Triple(q, desc, rows)
+}.mapLatest { (q, desc, rows) ->
+    withContext(rankingDispatcher) {
+        val matched = rows.filterIndexed { index, row ->
+            if (index % 128 == 0) ensureActive()
+            row.title.contains(q, ignoreCase = true)
+        }
+        val ordered = if (desc) matched.sortedByDescending { it.updatedAt }
+                      else matched.sortedBy { it.updatedAt }
+        ensureActive()
+        SearchResult(query = q, rows = ordered)
+    }
+}
+```
 
-单次调试证明了方向，还不足以证明收益稳定。把同一用户路径变成可重复基准，再控制编译和安装状态，才能判断改动是否适用于真实发布构建。
+`mapLatest` 用于取消旧转换，但普通 CPU 排序本身不会因为协程取消立即停止。过滤循环定期检查，排序结束后再次检查，防止过期结果继续往下游走；若排序已经大到取消延迟不可接受，还需改算法、索引或数据规模，不能只加协程包装。下游如何 `stateIn`、何时订阅与何时停止生产，见 [State 的数据源接入](#/article/compose-state)。
 
-Macrobenchmark 用受控操作测端到端启动和交互；Baseline Profiles 帮助运行时提前优化关键代码路径，不能修复错误布局算法、主线程 I/O 或无限反馈循环。比较时明确编译模式、安装状态、冷/热启动和 Profile 是否实际生效。
+是否再加防抖？输入框显示通常应立即更新，结果请求可以按产品容忍度防抖；不能为了少计算，让用户输入的文字也延迟数百毫秒。另一种方案是预建搜索索引，增加构建与内存成本，换取更低查询成本。选择取决于数据变更频率、查询频率和内存预算，不能一律后台排序。
 
-建议独立基准模块脚本执行“启动→输入词→滚动→打开详情→返回”。保存原始 trace、分布与异常样本，不只贴一个平均值。若只选择最快的一次，既不能说明稳定收益，也不能解释低端设备退化。[Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)、[Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview)。
+其他优化也应有对应证据：高频偏移只影响位置时延迟到放置读取；输入频繁而结果只是“是否超过阈值”时评估 derivedStateOf；图片成本主导时调整尺寸和解码。每次只验证明确假设，相关机制分别见 [阶段失效](#/article/compose-phases) 和 [列表](#/article/compose-lazy)。
 
-## 6. 诊断报告与回归
+## 4. 防止把不更新误认成优化成功
 
-基准结果最终要能被别人复核，也要在后续迭代继续守住。把输入、环境、根因、改动和代价连在一起，才是一份可用于技术决策的性能结论。
+假设给模型强行标了稳定：
 
-按“问题定义→可复现输入→版本与设备→证据→根因假设→单项改动→对照结果→副作用→回归措施”记录。把未证实推测与已观察事实分开。例如“重组下降”是观察，“因此所有卡顿消失”是未经支持的因果跳跃。
+```kotlin
+// 反例：普通 var 的变化没有通知 Compose，不满足此声明的承诺。
+@Stable
+class ArticleUi(var title: String)
+```
 
-长期治理应有帧、内存和正确性预算，以及可复现基准、负责人和回退条件。流式文本采用批量刷新后，还要报告首字延迟与内容完整性；把帧耗时转移为交互等待不一定是成功。项目面试只使用本人真实参与和可核验数据，学习推演不冒充线上成绩。
+随后修改 `article.title`，对象仍是同一个，普通属性也没有触发状态失效。页面可能保持旧标题，重组计数看起来“更好了”。这不是性能收益，而是状态模型错误。
 
-## 进一步阅读
+可选择真正不可变的数据并通过可观察持有者替换实例，或者在稳定持有者中使用可观察 State 属性。注解描述契约，不会替属性生成观察器。强跳过下，不稳定参数可能按引用身份比较，稳定参数按相等性比较；因此也不能拿旧版本“有不稳定参数就不能跳过”的经验直接解释新项目。
 
-- [Compose 性能工具](https://developer.android.com/develop/ui/compose/performance)：选择当前工具链支持的 tracing 与分析入口。
-- [通用优化证据](#/article/performance-proof)、[测试与恢复](#/article/compose-testing)：补齐正确性和回归部分。
+验证至少包括：同一实例内部变化、新实例内容相同、新实例内容不同、函数自己读取的 State 直接失效。前两项不是要求得到同样重组次数，而是确保每种数据模型下显示与契约一致。具体转换和比较条件见 [编译器与强跳过](#/article/compose-compiler?section=4) 第 4–6 节。
+
+缓存和比较都有成本：结构相等可能遍历集合，深层 UI 模型复制可能增加分配，分得过细也会增加维护复杂度。优化评审要能说明省掉了什么、增加了什么，以及为什么当前瓶颈值得这个交换。
+
+## 5. 把对照场景固定为基准
+
+trace 支持根因假设以后，用 Macrobenchmark 把同一交互重复执行。基准模块与被测应用分离，被测版本应接近 Release：明确 debuggable、profileable、混淆和编译模式，不能用 debug 与 release 比较后把全部差异归因于一次代码改动。
+
+下面是滚动场景的测试骨架。依赖 AndroidX Benchmark Macro 的 JUnit4 rule 和 UI Automator；`com.example.reader` 是需替换的包名，测试目标需有固定本地数据入口。这里用内容描述定位仅为演示，实际可使用已配置的稳定资源标识，避免为了测试污染读屏文案。
+
+```kotlin
+@get:Rule
+val benchmark = MacrobenchmarkRule()
+
+@Test
+fun resultsScroll() = benchmark.measureRepeated(
+    packageName = "com.example.reader",
+    metrics = listOf(FrameTimingMetric()),
+    compilationMode = CompilationMode.None(),
+    iterations = 10,
+    setupBlock = {
+        pressHome()
+        startActivityAndWait()
+        check(device.wait(Until.hasObject(By.desc("固定结果列表")), 5_000))
+    },
+) {
+    val list = device.findObject(By.desc("固定结果列表"))
+    list.setGestureMargin(device.displayWidth / 5)
+    list.fling(Direction.DOWN)
+    device.waitForIdle()
+}
+```
+
+骨架假设每次启动都进入相同列表并重置滚动位置；如果应用会恢复位置，必须在 setup 明确恢复相同起点，否则十轮测的不是同一段内容。输入延迟还需另建输入场景及对应指标，不能用滚动 FrameTimingMetric 单独证明搜索反馈改善。
+
+`CompilationMode.None()` 是一个明确的无预编译对照条件，不是生产用户唯一状态。评估 Baseline Profile 时，可对照实际支持的 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`，确认 Profile 存在并被使用；记录 warmup、安装和启动条件，避免把预热差异算作业务优化。API 与配置以 [Macrobenchmark 文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 为准。
+
+Baseline Profile 让 ART 对关键路径获得提前优化依据，减少解释/JIT 等成本；它不能把反复排序变成不排序，不能消除错误锁等待，也不能代替图形优化。生成路径应覆盖真实关键操作，再在可重复实验里确认收益，不能把官方案例的百分比套到自己的应用。机制见 [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview)。
+
+## 6. 把实验结论变成持续治理与项目证据
+
+报告应让没参与的人也能复核。对当前案例，可以先建立下面这份空表，实测后填写，不能把示例数字伪装成结果：
+
+| 项目 | 原版本 | 修改版本 | 判定依据 |
+| --- | --- | --- | --- |
+| 输入反馈分布 | 待测 | 待测 | 同设备、同词序列、同数据 |
+| 对应结果可见时间 | 待测 | 待测 | 查询版本一致，旧结果不覆盖 |
+| 滚动帧分布 | 待测 | 待测 | 同段列表与缓存条件 |
+| 内存与 CPU 工作量 | 待测 | 待测 | 排序次数、分配、后台成本 |
+| 正确性 | 待验 | 待验 | 排序切换、取消、恢复、账号切换 |
+
+保留原始 trace、提交 SHA、依赖版本、设备与异常样本。先规定异常处理规则，再观察结果；不要只挑最快一轮。若低端设备改善而高端无变化，这是有价值的边界；若平均值改善但尾部恶化，则要解释尾部对应哪种用户路径。
+
+持续治理可以把固定场景放入回归流程，设定噪声容忍范围和需人工复核的退化门槛。线上按页面、设备档位和版本观察，提供回退开关。流式 AI 文本若改成批量刷新，也应同时报告首字延迟、帧分布和内容完整性，不能把等待增加藏在更好的帧指标后面。
+
+面试时能讲清“现象如何量化、证据排除了什么、为什么选这个方案、牺牲了什么、后续怎样防回退”，比背一组优化 API 更有说服力。这里的教学案例可用于练习判断，实际项目成果必须来自本人真实参与和可核验数据。可继续阅读 [性能证据文章](#/article/performance-proof) 与 [测试边界](#/article/compose-testing)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Compose 性能问题应该怎样定义？（回看第 1 节）
-2. 怎样从现场逐层缩小范围？（回看第 2 节）
-3. 为什么 @Stable 或“减少重组”有时会把页面优化坏？（回看第 4 节）
-4. Macrobenchmark 与 Baseline Profiles 怎样配合？（回看第 5 节）
-5. 怎样做一份能经受追问的诊断报告？（回看第 6 节）
+1. 重组次数为什么不能代替卡顿指标，输入反馈和结果可见时间为何要分开？（回看第 1、2 节）
+2. remember 为什么不能省掉首次排序，缺失 key 和原地修改各会怎样失效？（回看第 3 节）
+3. mapLatest 为什么不保证 CPU 排序立即停止，后台化有什么代价？（回看第 3 节）
+4. 怎样识别稳定性或缓存带来的错误更新，Baseline Profile 又能解决什么？（回看第 4、5 节）
+5. 一份可以复核的性能报告要保留哪些证据，如何防止收益归因错误？（回看第 6 节）

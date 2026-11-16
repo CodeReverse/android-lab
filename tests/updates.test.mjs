@@ -32,7 +32,7 @@ test('invented questions, companies and hidden categories cannot become evidence
  assert.throws(()=>validateExtraction({...extraction,category:'interviews'},page,categories,config));
  assert.throws(()=>validateExtraction({...extraction,questions:[{summary:'解释一个不存在的问题',quote:'面试官让我写红黑树'}]},page,categories,config));
 });
-test('generation requires complete answers, sufficient depth and fetched principle citations',()=>{
+test('generation checks answer coverage, structural limits and fetched principle citations',()=>{
  const good=generated();assert.ok(validateDraft(good,extraction,[ref]));
  assert.throws(()=>validateDraft({...good,answers:[]},extraction,[ref]));
  assert.throws(()=>validateDraft({...good,references:[{url:'https://evil.test/doc',supports:'这是未被读取的所谓原理依据'}]},extraction,[ref]));

@@ -1,79 +1,177 @@
-## 1. 语义树与测试节点
+## 1. 从找不到收藏按钮理解语义树
 
-搜索结果已经显示在屏幕上，测试却找不到按钮里的文字。先别急着加等待时间：测试查询的是用户语义结构，未必是所有视觉节点。理解它观察什么，才能判断究竟是定位错误还是页面没有完成。
+页面上的收藏图标明明存在，测试却 `onNodeWithText("收藏")` 找不到。先不要增加等待时间：图标未必带 Text，测试观察的也不是像素。Compose 的常用 UI 查询通过 Semantics 识别用户可感知的名称、状态和动作。
 
-测试主要通过 Semantics 查询节点和动作，不是直接遍历全部 LayoutNode 或读取像素。按钮可能合并子语义，清除/重定义语义也会影响选择器；未合并树有助诊断，但不能因此无条件依赖所有内部节点结构。
+先给一个最小组件，以下代码使用 Material 3 与 Compose UI，省略常规 import：
 
-先打印语义树，看标签、角色、状态和合并关系；按用户能识别的行为定位。业务上独立的“收藏”动作应有明确语义，而不是为了测试给每一层 Box 填随机 testTag。语义结构稳定，组件内部重构才不至于让所有测试失效。[语义树](https://developer.android.com/develop/ui/compose/accessibility/semantics)。
-
-## 2. 状态输入与事件输出
-
-能找到节点之后，下一步是验证点击后的契约。一个只接收参数的结果行，点击时应输出事件；真正修改状态的是外部持有者，测试不能把这两层职责混在一起。
-
-给 SearchScreen 注入确定的 UiState 和可记录事件的回调。输入关键词，检查 onQueryChange 收到什么；再提供新的加载/结果状态，检查显示内容。不要假定无状态组件会自行修改外部参数。行组件点击后应发出准确 ID，而不是列表下标。
-
-另写集成测试验证 ViewModel 将事件转成状态，使用可控制响应次序的 fake repository。原创反例：请求 A 较慢，B 先完成；随后放行 A，断言页面仍显示 B 的关键词与结果。这个断言直接防止过期响应覆盖，比验证某个 collect 调用了两次更有业务意义。
-
-可以把一次收藏测试拆成两条清楚的契约：
-
-```text
-组件：输入 isSaved=false → 点击 → 输出 Toggle(articleId)
-状态层：接到 Toggle → 仓储成功/失败 → 输出对应的新 UiState
+```kotlin
+@Composable
+fun SaveButton(saved: Boolean, onToggle: () -> Unit) {
+    Button(onClick = onToggle) {
+        Text(if (saved) "已收藏" else "收藏")
+    }
+}
 ```
 
-组件测试记录事件内容，不要求组件私自改参数；状态层测试控制仓储响应，不依赖真实网络时间。两条都成立后，再用少量集成测试确认它们确实接在一起。
+Button 提供点击动作，内部 Text 提供文字语义，合并后的语义树可能把它们表现为一个可操作节点。它不与组合调用次数或 LayoutNode 数量一一对应。查询 `onNodeWithText("收藏").assertHasClickAction()`，是在表达“用户能找到名为收藏的动作”，而不是“第二层第三个 Box 包含一个 Text”。
 
-## 3. 同步与空闲等待
+若查询失败，先 `rule.onRoot().printToLog("Semantics")`，必要时查看 `useUnmergedTree = true` 的树。若组件使用 `clearAndSetSemantics` 重定义了语义，内部视觉文字可能不再是外部查询依据；强行依赖未合并内部结构会使测试随重构频繁失效。
 
-组件行为清楚后，把请求接回来就会出现时间问题。测试需要等待的是“指定结果已可见”，而不是一个估计足够长的秒数。
+图标按钮则应该通过明确的内容描述或动作语义定位。`testTag` 适合没有稳定用户标签的测试边界，但不要为了测试给所有内部布局加标记。语义设计既影响测试，也影响无障碍，公共模型见 [Semantics](https://developer.android.com/develop/ui/compose/accessibility/semantics)。
 
-sleep 只说明时间过去，不说明依赖完成。Compose 测试框架对自己管理的工作有同步机制，但外部网络、平台工作及自建线程不都由同一时钟控制。用受控 fake、明确条件等待或所用框架支持的 idling resource，把“完成”变成可观察状态。
+## 2. 用两条测试分开事件输出与状态更新
 
-特别区分测试时钟推进与外部调度器：推进动画时间不等于服务器已经回复。设置有限超时，超时输出相关状态和语义树；不要靠把 sleep 从一秒加到五秒掩盖竞态。[测试同步](https://developer.android.com/develop/ui/compose/testing/synchronization)。
+现在能找到按钮，点击后该不该立刻显示“已收藏”？如果传入的是固定 `saved=false`，按钮没有修改这个外部参数的能力。先验证它把事件送出去，再验证宿主如何把事件转成新状态。
 
-## 4. 动画中间状态
+下面是可放入 Android 仪器测试的最小结构，依赖 `ui-test-junit4`、JUnit4 及测试宿主所需的 `ui-test-manifest` 配置。断言与动作来自 `androidx.compose.ui.test`，`assertEquals` 来自 JUnit；被测组件就是上一节的 SaveButton。
 
-对于动画，等待全部空闲还可能错过需要验证的中间过程。我们要主动控制时间，观察展开一半时再次关闭等输入如何改变状态。
+```kotlin
+class SaveButtonTest {
+    @get:Rule val rule = createComposeRule()
 
-在适用的 Compose 动画场景关闭自动时钟推进，触发目标变化，推进指定帧或时长，检查位置、透明度的语义可观察结果或截取画面，再推进到完成。选择断言容差，避免把实现舍入当业务失败；平台绘制完成仍按测试同步要求等待。
+    @Test fun clickEmitsEventWithoutInventingState() {
+        var calls = 0
+        rule.setContent {
+            MaterialTheme { SaveButton(saved = false, onToggle = { calls++ }) }
+        }
+        rule.onNodeWithText("收藏").performClick()
+        rule.runOnIdle { assertEquals(1, calls) }
+        rule.onNodeWithText("收藏").assertExists()
+    }
 
-测试“展开到一半改为关闭”比仅测一次展开更能暴露状态机问题。若组件不把像素属性暴露为语义，不应为了测试泄漏所有内部实现；可以通过布局边界、可见性、用户动作或专门视觉测试验证。截图只是补充，不能证明按钮操作正确。
+    @Test fun hostFeedsNewStateBackToButton() {
+        rule.setContent {
+            var saved by remember { mutableStateOf(false) }
+            MaterialTheme { SaveButton(saved) { saved = !saved } }
+        }
+        rule.onNodeWithText("收藏").performClick()
+        rule.onNodeWithText("已收藏").assertExists()
+    }
+}
+```
 
-## 5. 状态恢复与进程重建
+第一条保护组件契约：点击输出一次事件，但不能伪造已完成的外部状态。第二条验证最小单向数据流闭环：事件 → 宿主修改 State → 新值驱动显示。两个测试失败的含义不同，不能只保留第二条后把所有问题都叫“按钮失效”。
 
-时间可控不代表生命周期已覆盖。搜索词在旋转后还在，并不能证明进程被系统回收后也能恢复，需要分别验证不同状态持有者的边界。
+生产环境如果收藏需要仓储确认，应单独测试乐观更新、失败回滚或等待态。结果行还应验证输出的是业务 ID，而不是当前位置；头插后下标变化，事件不能指向另一篇文章。真正的网络响应顺序交给下一层受控测试，组件测试不必每次启动网络与导航。
 
-旋转通常保留 ViewModel，而进程死亡不会。StateRestorationTester 可测试组合保存/恢复契约，不代表真实进程死亡、仓储重建和导航恢复都被覆盖。应分层验证：局部 Saver、宿主重建、保存状态恢复、从持久层重建完整页面。
+## 3. 把异步完成变成可控输入
 
-搜索词应能恢复，网络结果可以重新获取，正在执行的请求和临时提示不应被盲目当作仍然有效。把恢复后 UiState 与请求日志同时检查，尤其验证账号变更、旧返回栈和无效资源 ID。资料：[Compose 状态保存](https://developer.android.com/develop/ui/compose/state-saving)。
+搜索 A 比 B 慢时，旧响应可能覆盖新查询。等待两秒再看结果只能碰运气，因为机器快慢会改变顺序。应让测试控制“什么时候完成哪一次请求”。
 
-## 6. 无障碍和视觉回归
+下面是一个可用于状态层测试的 fake；它只是返回数据，不替生产逻辑做版本校验：
 
-恢复后功能可用，还要确认不同用户能看清、找到并操作同一入口。语义、视觉和真实辅助操作提供的证据不同，需要互相补充。
+```kotlin
+class ControlledSearch {
+    private val replies = mutableMapOf<String, CompletableDeferred<List<String>>>()
 
-对收藏项检查可读名称、动作、选中态与可达区域；用大字号、RTL、深色、长标题和折叠宽度检查布局。语义测试能检查动作和状态，截图测试能发现裁切与主题错误，真实读屏/键盘操作能发现焦点顺序和朗读问题，三者互补。
+    fun prepare(query: String): CompletableDeferred<List<String>> =
+        CompletableDeferred<List<String>>().also { replies[query] = it }
 
-颜色相近、触摸区域过小或重复朗读都可能在业务断言通过时存在。选择代表性页面与风险变体，避免维护成千张没有行为覆盖的快照。基准截图更新必须解释变化来源，不能为了 CI 变绿一键接受全部差异。
+    suspend fun search(query: String): List<String> = replies.getValue(query).await()
+}
+```
 
-## 7. 测试分层与发布门槛
+测试先 prepare A/B，再触发 A、B，完成 B 后断言显示 B，最后完成 A 再断言仍是 B。与受控协程调度器配合时，推进启动任务和结果投递所需的调度，不靠真实网络时间。
 
-这些检查不应全部塞进慢速端到端测试。按状态规则、组件契约和跨系统流程分层，才能让失败容易定位，同时把发布成本控制住。
+还要问清这个 fake 验证了什么：`await()` 本身可取消，若实现依赖 `mapLatest`，A 可能已被取消，因此这个测试验证了取消路径，却没有覆盖“外部 SDK 忽略取消，迟到回调仍到达”。要验证请求版本防线，应另用可主动投递旧回调的 fake，在取消后仍投递 A，然后检查提交前的 ID 校验。不能用一个永远不产生迟到回调的 fake 宣称防竞态完全通过。
 
-状态转换、过期响应判断和数据合并尽量在快速单元测试覆盖；组件行为、语义和恢复放 UI 测试；主路径做端到端与性能基准。把随机外部服务替换成确定输入，保留少量真实服务契约验证。测试应防止用户可见错误，而非锁死内部函数调用顺序。
+Compose 测试默认会同步它认识的 UI 工作；它不自动掌控所有后台线程、网络和平台异步任务。外部工作可使用明确条件、idling resource 或可控 fake。例如等待业务结果对应的语义出现：
 
-一次迁移至少保护输入、滚动身份、返回栈、恢复和监听清理，再根据实际风险增加机型与 API 矩阵。实验失败先分类为产品缺陷、环境或同步问题，不直接重跑到成功。后续见[互操作迁移](#/article/compose-interop)。
+```kotlin
+rule.waitUntil(timeoutMillis = 5_000) {
+    rule.onAllNodesWithText("B 的结果").fetchSemanticsNodes().isNotEmpty()
+}
+rule.onNodeWithText("B 的结果").assertIsDisplayed()
+```
 
-## 阅读资料
+超时应输出当前查询、请求版本和语义树。增加超时只适合已知更慢的工作，不应掩盖错误同步。测试时钟、外部调度器与平台工作边界详见 [测试同步](https://developer.android.com/develop/ui/compose/testing/synchronization)。
 
-- [Compose 测试入口](https://developer.android.com/develop/ui/compose/testing)：了解规则、查询、动作与断言的职责。
-- [测试 API](https://developer.android.com/develop/ui/compose/testing/apis)：练习 merged/unmerged 树选择及组合匹配器。
+## 4. 用受控时钟观察动画转向
+
+默认同步适合等待稳定 UI，却会让我们错过动画中间态。假设面板宽度从 40dp 动画到 140dp，测试只看最终 140dp，无法证明中途关闭没有跳变。
+
+为了把例子缩到可测量的行为，使用线性 tween，给 Box 一个稳定测试标记。以下测试片段使用前文的 rule，`expanded` 由测试控制：
+
+```kotlin
+val expanded = mutableStateOf(false)
+rule.mainClock.autoAdvance = false
+rule.setContent {
+    val width by animateDpAsState(
+        targetValue = if (expanded.value) 140.dp else 40.dp,
+        animationSpec = tween(1_000, easing = LinearEasing),
+        label = "panel-width",
+    )
+    Box(Modifier.width(width).height(20.dp).testTag("panel"))
+}
+rule.runOnIdle { expanded.value = true }
+rule.mainClock.advanceTimeByFrame() // 处理目标变化
+rule.mainClock.advanceTimeByFrame() // 让动画获得起始帧时间
+rule.mainClock.advanceTimeBy(500)
+rule.waitForIdle()
+val middle = rule.onNodeWithTag("panel").getUnclippedBoundsInRoot().width
+assertTrue(middle.value in 80f..100f)
+
+rule.runOnIdle { expanded.value = false }
+rule.mainClock.advanceTimeByFrame()
+rule.mainClock.advanceTimeByFrame()
+rule.mainClock.advanceTimeBy(1_100)
+rule.waitForIdle()
+rule.onNodeWithTag("panel").assertWidthIsEqualTo(40.dp)
+```
+
+范围断言允许帧量化和动画启动时机带来的差异，避免把刚好 90dp 当作跨设备契约。代码测的是布局宽度，所以适合 bounds 断言；如果动画只修改 graphicsLayer 的透明度，这个宽度断言没有意义，应选择视觉结果或合适的可观察行为。
+
+测试时钟推进不等于所有 Android 测量、绘制和外部调度器同步推进，`waitForIdle` 仍用于等待相关平台工作。该示例不包含无限动画；关闭自动推进后，也不能再期待框架替我们把所有动画运行到终点。具体规则见 [动画测试](https://developer.android.com/develop/ui/compose/animation/testing)。本文展示测试设计，未在 Android 工程中执行这些片段。
+
+## 5. 用恢复测试区分 remember 与可保存状态
+
+旋转后搜索词还在，不代表进程回收后也能恢复；ViewModel 在配置变化中保留，但不能跨进程存活。先从最小的可保存组合状态验证：
+
+```kotlin
+@Test fun savedQuerySurvivesCompositionRestoration() {
+    val restoration = StateRestorationTester(rule)
+    restoration.setContent {
+        var query by rememberSaveable { mutableStateOf("") }
+        TextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier.testTag("query"),
+        )
+    }
+    rule.onNodeWithTag("query").performTextInput("compose")
+    restoration.emulateSavedInstanceStateRestore()
+    rule.onNodeWithTag("query").assertTextEquals("compose")
+}
+```
+
+该测试放在持有同一 rule 的测试类中。它模拟可保存状态注册表的保存与恢复；如果改成普通 remember，应无法依靠它恢复 query。它并不真正杀死进程，也没有重建数据库、网络客户端或整个导航栈，因此不能把通过结果写成“进程死亡场景全部通过”。API 边界见 [StateRestorationTester](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/junit4/StateRestorationTester)。
+
+完整恢复应分层：Saver 是否输出支持的数据；宿主重建后 ID 与保存所有者是否对应；进程重新启动后能否凭 ID 和持久层重建；恢复账号是否仍有权访问目标资源。正在进行的请求不是可持久事实，恢复后应重新判断并发起必要工作，不能恢复一个 Loading 标志后永久等待已经不存在的协程。
+
+用这条因果链设计测试，比把“旋转一次”作为全部恢复验收更准确。状态所有者的选择见 [State](#/article/compose-state?section=8) 第 8、9、11 节，返回栈所有者见 [导航](#/article/compose-navigation?section=3) 第 3 节。
+
+## 6. 让语义、像素与真实操作互相补证
+
+语义测试通过，仍可能出现文字被裁切；截图正常，也可能读屏把收藏按钮读成无意义图标。证据之间不能相互替代。
+
+对收藏行建立三层检查：语义上有名称、可用动作与正确状态；视觉上在长标题、大字体、RTL、深色和窄窗口中不遮挡；实际键盘或读屏能按合理顺序到达并触发操作。文字颜色和背景过近、焦点陷入隐藏区域，都可能在最小业务点击测试通过时存在。
+
+截图回归应固定字体、密度、语言、动画时间和数据，并为合理的渲染差异设定策略。更新基准图必须解释变化来自哪个需求；“全部接受新截图”不能当作修复。对于圆环动画的混合差异，截图或像素检查比语义合适；对于收藏事件到底对应哪篇文章，状态断言更直接。
+
+不要为每个排列组合保存一张图。优先覆盖容易改变布局或交互的边界，再按缺陷记录扩展。无障碍检查和真实用户路径也应成为组件接口评审的一部分，避免把它们推迟到功能完成后才补。
+
+## 7. 把失败定位能力作为测试分层目标
+
+状态转换、请求版本校验和结果合并可以用快速单元测试；单组件输入输出、语义、局部恢复放 Compose UI 测试；导航、混合 View 生命周期与关键业务链用少量集成测试；性能则用独立受控基准。选择依据是风险在哪层出现，而不是哪种测试工具最熟悉。
+
+例如“返回列表后收藏丢失”：若状态层持久化测试失败，先修保存；若仓储正确但组件固定接到旧值，查状态接线；若只在 Fragment View 重建后失败，查宿主与保存边界。分层让每个失败提供信息，而不是最后只得到一个端到端截图不一致。
+
+发布前保留与本次改动相关的保护：列表身份、过期响应、恢复、动画中断或资源释放。偶发失败先归类为产品竞态、同步缺陷还是设备环境，保留第一次失败证据；反复重跑直到绿色不能证明可靠。本文中的代码是学习用测试案例，不代表本站已经执行了 Android 仪器测试；本站自身的内容与路由测试是另一层验证。迁移场景继续看 [互操作与迁移](#/article/compose-interop)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Compose UI 测试观察什么，为什么找不到屏幕上可见的 Text？（回看第 1 节）
-2. 纯组件测试怎样区分状态输入与事件输出？（回看第 2 节）
-3. 动画怎样测中间过程，而不只看最终消失？（回看第 4 节）
-4. 无障碍与视觉回归应覆盖哪些具体输入？（回看第 6 节）
-5. 资深工程师怎样安排测试分层与发布门槛？（回看第 7 节）
+1. 语义树与布局树为何不同，找不到可见内容时应先检查什么？（回看第 1 节）
+2. 纯组件点击测试为什么不应要求它修改外部参数？（回看第 2 节）
+3. 可取消 fake 能否证明迟到回调安全，测试时钟为什么不能替代外部完成条件？（回看第 3 节）
+4. 怎样测试动画中断和状态恢复，又分别不能证明什么？（回看第 4、5 节）
+5. 语义、截图、真实辅助操作和状态层测试如何分工？（回看第 6、7 节）

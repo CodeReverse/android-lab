@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { marked, Renderer } from "marked";
+import { parseArticleRoute, articleSectionAnchor } from "../lib/article-route.ts";
 
 const root = path.resolve(import.meta.dirname, "..");
 const read = (name) =>
@@ -318,7 +319,10 @@ for (const a of articles) {
   if (a.inquiryCount !== inquiries.length || inquiries.some((q, i) => Number(q[1]) !== i + 1 || q[2].trim().length < 60))
     throw Error(`Incomplete or unordered question answers ${a.id}`);
   for (const match of a.markdown.matchAll(/\]\(#\/article\/([^)]*)\)/g)) {
-    if (!seen.has(match[1])) throw Error(`Broken article link ${a.id} -> ${match[1]}`);
+    const target = parseArticleRoute(`article/${match[1]}`);
+    const linked = articles.find((item) => item.id === target?.id);
+    if (!linked || (target.section !== undefined && !articleSectionAnchor(linked.toc, target.section)))
+      throw Error(`Broken article or section link ${a.id} -> ${match[1]}`);
   }
 }
 const registry = JSON.parse(fs.readFileSync(extra, "utf8"));
