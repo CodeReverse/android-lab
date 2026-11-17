@@ -1,6 +1,6 @@
 {
-  "version": "2e821259c96cff6b",
-  "updated": "2026-11-16",
+  "version": "e6e76d7e9e814584",
+  "updated": "2026-11-17",
   "enabled": false,
   "scheduleLabel": "每周一 10:17（北京时间，GitHub 排队可能延迟）",
   "lookbackDays": 730,

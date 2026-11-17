@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { stripRepeatedTitle } from "../lib/article-body.ts";
 import path from "node:path";
 import { marked, Renderer } from "marked";
 import { parseArticleRoute, articleSectionAnchor } from "../lib/article-route.ts";
@@ -35,6 +36,7 @@ const escape = (s) =>
       ],
   );
 function add(id, title, category, tags, body, type = "学习指南", summary = "", metadata = {}) {
+  body = stripRepeatedTitle(body, title);
   const toc = [];
   const renderer = new Renderer();
   renderer.heading = function ({ tokens, depth }) {

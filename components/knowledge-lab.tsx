@@ -594,7 +594,7 @@ function Lab({ readingMode, setReadingMode }: {
                   {readingMode ? <Minimize2 size={16} /> : <BookOpen size={16} />}
                   {readingMode ? "退出阅读" : "阅读模式"}
                 </Button>
-                {!readingMode && (
+                {!readingMode && article.toc.length > 0 && (
                   <Button
                     id="toggle-article-toc"
                     className="desktop-toc-toggle"
@@ -699,7 +699,7 @@ function Lab({ readingMode, setReadingMode }: {
             <ArticleView
               article={article}
               section={articleRoute?.section}
-              showOutline={outlineOpen && !readingMode}
+              showOutline={outlineOpen && !readingMode && article.toc.length > 0}
               readingMode={readingMode}
               toggleOutline={toggleOutline}
               state={state}
@@ -1509,6 +1509,7 @@ function ArticleView({
               这篇内容是追问与学习提纲，尚未提供全部标准答案和实验验证。可作为复习地图，不作为已核验结论直接背诵。
             </div>
           )}
+          {a.toc.length > 0 && <>
           <button
             className="mobile-toc text-button"
             aria-expanded={tocOpen}
@@ -1527,6 +1528,7 @@ function ArticleView({
                 </button>
               ))}
           </nav>
+          </>}
           <div className="prose" dangerouslySetInnerHTML={{ __html: a.html }} />
           <section className="note-panel">
             <div className="section-head">

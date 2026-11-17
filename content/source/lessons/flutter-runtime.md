@@ -1,71 +1,74 @@
-## 1. Widget、Element 与 RenderObject
+## 1. 列表反复 build，状态为什么还能保留
 
-列表项点一次收藏，build 再次运行，似乎又创建了很多 Widget。如果每次都重建全部界面，滚动怎么可能高效？先区分声明配置、实例身份和真正参与渲染的对象。
+收藏列表里每个商品有一个展开状态。点击某项后 setState 导致 build 再次执行，代码创建了新的 Widget；如果“Widget 就是长期存在的控件”，展开状态似乎应该每次丢失。矛盾来自把配置与长期身份混在一起。
 
-Widget 是声明配置，通常短寿命且不可变；Element 保存配置在树中的实例身份与状态联系；RenderObject 负责布局、绘制等渲染工作。build 返回新 Widget 不意味着屏幕上的全部底层对象都重建。框架根据类型、key 和树位置等信息决定复用或替换 Element，并更新对应渲染对象。
-
-因此 setState 的关键含义是告知框架某部分需要重新构建，不是直接在那一行把屏幕重画完。一次构建后是否需要重新布局或绘制，还取决于渲染属性是否改变。把 build 次数直接当作卡顿程度会误判。
-
-沿收藏状态变化作结构推演：
-
-```text
-状态改变 → 标记需要构建的范围 → 得到新 Widget 配置
-按类型、位置和 key 匹配 Element → 更新对应渲染属性
-属性变化决定后续布局或绘制工作
+```dart
+class ProductRow extends StatefulWidget {
+  const ProductRow({super.key, required this.productId});
+  final String productId;
+  @override
+  State<ProductRow> createState() => _ProductRowState();
+}
 ```
 
-新配置对象多，不等于所有 Element 和 RenderObject 都被替换。反过来，业务项身份不稳定时，复用还可能关联错状态；需要同时解释更新成本和正确性。
+片段省略 State 的 UI 实现，只展示配置与状态分离。Widget 是不可变配置，Element 负责树中的实例身份和更新关系，State 与相应 StatefulElement 的生命周期关联。RenderObject 则承担布局、绘制等职责；并非每个 Widget 都对应一个 RenderObject。三层分离让配置可以便宜地重建，同时保留需要持续存在的状态。
 
-## 2. 自绘渲染与平台边界
+## 2. 更新时先匹配身份，再决定复用
 
-复用解释了更新成本，却没有解释同一份界面为何能跨平台显示。继续向渲染层走，就会遇到共享绘制与平台交互之间的边界。
+假设原列表为 A、B，每行有自己的展开状态。前面插入 X 后，若只靠位置匹配，同类子项容易把原位置的状态留给新内容。稳定业务 key 告诉框架同一父级下哪一个配置延续原身份：
 
-Flutter 通常使用自己的渲染体系绘制 UI，因此能够在多个平台复用大量界面代码与视觉逻辑。但平台特性、无障碍、输入法、文本行为、窗口与系统控件仍需要适配。不能把“UI 一致”理解成所有系统交互无需平台测试。
+```dart
+Column(
+  children: products.map((p) => ProductRow(
+    key: ValueKey(p.id), productId: p.id,
+  )).toList(),
+)
+```
 
-Platform View 将原生视图嵌入 Flutter，涉及合成、输入和生命周期协调。具体性能受平台版本、组合模式与控件影响，例如地图、视频和复杂输入不能仅靠一个静态 demo 判断。渲染后端也在演进，必须按目标平台与 Flutter 版本确认，不把历史引擎描述写成永久默认。
+`products` 是教学数据列表。更新匹配考虑 runtimeType 和 key；没有 key 时还依赖树的位置与父级更新算法。key 不是全局数据库主键，LocalKey 的匹配有父级范围；GlobalKey 能承担跨位置身份等能力，也带来额外限制和成本，不能给每一行随意分配一个来“优化性能”。
 
-## 3. isolate 与消息通信
+沿 X、A、B 的插入过程推演：匹配到 A 的 Element，更新其 Widget 配置，State 继续；X 没有对应实例，才创建新的状态。这比“diff 自动保留所有状态”更准确。机制依据 [Flutter 架构](https://docs.flutter.dev/resources/architectural-overview)。
 
-布局能够复用，大 JSON 解析仍可能卡住 UI。异步语法不等于把计算移走，需要进一步明确执行隔离、消息传输和原生接口的成本。
+## 3. build 发生不等于整屏重新栅格化
 
-isolate 有独立执行与内存语义，通过消息通信协作。把重解析工作移到 isolate 可以减少 UI 执行压力，但创建、传输和结果合并仍有成本；小任务频繁跨 isolate 可能得不偿失。原生插件侧的线程规则也不会因 Dart 代码使用 async 就自动满足。
+build 更新配置与 Element 关系，布局根据约束计算几何，绘制生成需要的绘制工作。布局可以用“约束向下、尺寸向上、父级决定位置”的模型理解；具体 RenderObject 可能有不同布局协议。
 
-Platform Channel 是跨 Dart 与宿主的接口机制，需要序列化、线程协调与错误映射。设计接口时尽量传业务批量数据，避免每帧数百次细碎跨边界调用。FFI 可服务特定 native 交互，但不是自动替代所有平台插件与 UI API 的万能通道。
+```text
+状态变化 → 标记需要 build → 更新配置/Element
+                         → 必要的 layout / paint → 渲染
+```
 
-## 4. 混合接入的工程约束
+为什么分开？文字颜色变了不必改变尺寸，父宽改变可能需要重新布局却不必重建业务状态。RepaintBoundary 能在适当位置隔离绘制重做，但增加层和缓存相关成本；不能把每个节点都包住当作通用优化。
 
-单个 Flutter 页面运行顺畅，还不等于适合放进现有 App。第一次进入页面时，引擎、内存和导航状态都要与原生宿主协作。
+Flutter 通常自己组织 UI 渲染，而不是把每个 Widget 翻译成 Android View。嵌入平台 View 是另一条互操作路径，涉及合成、输入与平台资源；这也是与 [RN 渲染](#/article/rn-architecture) 比较时的重要维度，而非简单说谁“更原生”。
 
-原生存量应用需要考虑 engine 生命周期、首个 Flutter 页的启动成本、内存基线、包体、导航返回栈、账号态和日志打通。预热可以降低首屏等待，却可能提高原生首页启动与常驻内存成本。是否预热应按进入概率和设备档位决定，而非只展示预热后的最佳值。
+## 4. Dart 与平台能力之间仍有协议成本
 
-Flutter 适合团队希望共享较多 UI、交互相对独立且能够承担平台适配成本的业务模块。系统深度集成、多媒体复杂原生控件或强平台差异页面，需要单独验证混合成本。技术本身不能代替业务划分。
+```dart
+const channel = MethodChannel('example/player');
+final playing = await channel.invokeMethod<bool>('isPlaying');
+```
 
-## 5. 页面切换与资源验证
+示例只说明调用形式。参数需要按 codec 编码，宿主 handler 解码并执行，再返回结果。异步 API 不等于底层平台操作自动在后台运行；线程约束要按平台通道与 Task Queue API 核对。一次调用很小，但每帧传大量对象或逐像素往返，会把序列化、调度和复制变成主成本。
 
-因此选型应回到目标业务：用首次进入、重复进入、输入法和原生控件场景检查收益，而不是只比较一个独立演示页。
+替代方案包括批量提交、传稳定 ID/文件位置、让高频计算留在一侧，必要时评估 FFI 与共享资源。FFI 缩短某些调用路径，却引入 ABI、内存所有权和阻塞风险。官方契约见 [Platform channels](https://docs.flutter.dev/platform-integration/platform-channels)。
 
-用列表、复杂文本、平台地图、输入法与冷启动五种场景比较原生基线；分别测首次进入、二次进入和长期驻留。不把公开公司历史采用案例理解为该 App 当前全量技术栈，案例需同时给出时间和具体模块。
+## 5. isolate 解决并行，也要求重划数据边界
 
-## 原理依据与适用边界
+一个 Dart isolate 有自己的执行与内存模型，耗时计算可安排到其他 isolate；这不是“随便共享同一个可变 Map”。数据交换依消息与支持的传递方式，创建、复制和结果交付也有成本。很短的小计算分出去可能更慢，主 isolate 上的长同步循环则会挡住它的其他工作。
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+技术试验应先测任务规模，再比较主 isolate、后台 isolate 和平台侧实现，计入输入输出传输，而非只比较核心函数耗时。基础机制参见 [Dart 并发](https://dart.dev/language/concurrency)。
 
-- [Flutter 架构](https://docs.flutter.dev/resources/architectural-overview)
-- [平台通道](https://docs.flutter.dev/platform-integration/platform-channels)
-- [原生应用集成](https://docs.flutter.dev/add-to-app)
+## 6. 混合工程先定义退出和回退
 
-## 面经选题来源
+把 Flutter 页面嵌入既有 App，需要明确 Engine 与页面谁拥有、退出后哪些资源继续、导航与账号状态如何同步。复用 Engine 可减少重复初始化，却可能增加常驻资源和状态污染风险；每次新建则相反。选择要由页面频率、内存预算和实际启动数据支持。
 
-原帖仅支持选题，不代表本文全部内容是公司原题，也不用于估算行业频率。
-
-- [美团 Android 一面 · 2025-02-17](https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56)：根据简历追问为何选择 Flutter；本文补充选型所需的机制知识。
+教学 spike 可选真实复杂度的一页，测试首次/再次进入、键盘、无障碍、滚动、后台恢复和 channel 失败。公开应用采用情况应引用具体团队、日期和模块，不能从“某 App 用过 Flutter”推导它现在全量采用。本文讲机制与验证，不提供未经核验的使用比例；比较决策见 [技术决策](#/article/technology-decisions)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Widget、Element、RenderObject 分别是什么？（回看第 1 节）
-2. 自绘渲染怎样实现一致性，又有什么边界成本？（回看第 2 节）
-3. Dart isolate 与共享内存线程有什么区别？（回看第 3 节）
-4. 原生 App 混合接入 Flutter 先验证哪些约束？（回看第 4 节）
-5. 怎样验证页面切换、原生视图和资源回收？（回看第 5 节）
+1. Widget 重建为什么不必丢失 State？（第 1、2 节）
+2. key 在列表插入时改变了哪一步匹配？（第 2 节）
+3. build、layout、paint 为什么不能混为一次刷新？（第 3 节）
+4. Channel、FFI 与 isolate 各把成本放在哪里？（第 4、5 节）
+5. 混合工程怎样验证 Engine 复用的收益与代价？（第 6 节）

@@ -1,28 +1,61 @@
-## 1. 挂起与线程阻塞
+## 1. 从顺序代码里找出等待
 
-搜索页要同时加载用户资料与权益。把函数标成 suspend 后，代码看起来顺序清楚，页面却仍可能卡住。先不要把 suspend 理解成“自动开后台线程”，而要看等待时执行权怎样交出去。
+详情页先取得用户，再加载该用户的订单。回调可以完成这件事，但第二步的成功、异常和页面取消散落在不同位置。我们希望代码顺序接近业务顺序：
 
-suspend 表示函数可以挂起调用链。编译器使用 Continuation 和状态机保存恢复点；真正挂起时把控制权交还调用方，将来从保存的位置继续。它不自带线程切换，也不保证内部所有操作非阻塞：在 Main 上执行阻塞文件读取，即使函数加了 suspend，仍会堵住主线程。
+```kotlin
+suspend fun loadDetail(): Detail {
+    val user = loadUser()
+    val orders = loadOrders(user.id)
+    return Detail(user, orders)
+}
+```
 
-可以用两个挂起点理解状态机：执行到第一次需要等待时保存后续要用的局部变量与 label；恢复后从对应分支读取结果，继续到下一挂起点。某次调用也可能直接返回而不挂起。具体生成类和优化细节随 Kotlin 后端与版本变化，示意状态机不是完整反编译结果。
+`Detail` 和两个加载函数是教学用业务类型；这里假设加载 API 本身支持挂起等待。`suspend` 允许函数暂停后继续，不保证一定暂停，更不保证开线程。若 `loadUser` 内部直接执行阻塞读取，调用它的线程仍被占住。先区分这两种等待：阻塞保留线程执行栈并等待；挂起保存继续计算所需的状态，让当前线程有机会处理其他工作。
 
-## 2. Context、Job 与 Dispatcher
+为什么不每个请求开一个线程？线程有栈、调度及切换成本，等待数很多时尤其明显。协程把等待中的计算和线程解耦，但实际执行代码仍要用线程；它没有消除 CPU 和下游连接容量限制。
 
-挂起解释了如何暂停调用链，但还没有决定恢复时由谁执行、任务归谁管理。于是需要把调度位置与生命周期从函数返回值中单独拿出来。
+## 2. 顺序代码怎样记住恢复位置
 
-Job 描述生命周期与父子关系，Dispatcher 决定执行调度，CoroutineName 辅助诊断；它们不是一个“线程对象”。协程恢复后可以在不同线程运行，ThreadLocal 不会自动具有正确的跨线程传播语义，需要相应上下文机制。
+普通函数依靠调用栈记住“下一行”。挂起后这段栈不必一直占着线程，恢复位置就需要另一种载体：Continuation。编译器按挂起点转换控制流。下面是解释用途的伪代码，不是某个 Kotlin 版本的反编译输出：
 
-CPU 密集工作通常需要受控并行度；阻塞 I/O 则需要避免耗尽计算线程。Dispatchers.IO 并不让一个不可取消的底层库突然支持取消，更不意味着可以无限发起并发。业务常需要信号量或 limitedParallelism 一类方式限制资源使用，且限制对象应匹配下游容量。
+```text
+state = 0, savedUser = null
+resume(result):
+  state 0:
+    state = 1
+    r = loadUser(thisContinuation)
+    if r == SUSPENDED: return SUSPENDED
+    result = r
+  state 1:
+    user = checkedResult(result)
+    savedUser = user
+    state = 2
+    r = loadOrders(user.id, thisContinuation)
+    if r == SUSPENDED: return SUSPENDED
+    result = r
+  state 2:
+    return Detail(savedUser, checkedResult(result))
+```
 
-## 3. 结构化并发的生命周期
+第一次真正挂起时，状态已经设为 1。恢复携带用户结果，从状态 1 继续；第二次挂起前把后面要用的 `user` 保存起来。若加载函数命中内存缓存直接返回，就顺着同一次调用继续，不需要先挂起再恢复。`checkedResult` 表示结果可能包含异常，不能把失败当正常用户使用。
 
-两个请求可以并行了，页面又遇到其中一个失败的情况。仅知道每个任务在哪执行，还不足以决定另一个任务该继续还是取消；这里需要父子结构表达责任。
+因此不是“每行代码都变成一个线程”，也不是保存整个线程栈。需要跨挂起点存活的局部变量、位置标签及后续 Continuation 构成恢复所需的信息。具体生成类、内联和状态机消除依编译器而变；语言模型可查 [Kotlin 协程规范](https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html)。
 
-coroutineScope 等待子任务完成，并将失败沿结构传播。普通子协程失败通常会取消其父和兄弟；supervisorScope 则允许子任务独立失败，但调用者仍需观察失败并决定如何降级。SupervisorJob 不是忽略异常的开关。
+## 3. 能恢复以后，谁负责让它继续运行
 
-launch 与 async 的结果表达不同。async 把结果封装进 Deferred，但在普通父子结构中，失败仍可能立即影响父作用域，不能笼统说“直到 await 才传播”。CoroutineExceptionHandler 主要处理未捕获异常，不能把已经失败的协程恢复到原位置继续运行。需要恢复的业务逻辑应在明确边界使用 try/catch。
+Continuation 解释了恢复什么，Dispatcher 决定在哪里调度恢复，Job 表达谁拥有这项工作。三者不能合并成“协程就是轻量线程”。页面 scope 里的任务通常跟随页面级状态所有者；作用域取消后，不应还把旧结果更新到新页面。
 
-先看一个两项都必需的组合，示意中的两个加载函数需要是真正合适的挂起 API：
+```kotlin
+suspend fun readLegacyFile(): ByteArray = withContext(Dispatchers.IO) {
+    blockingFileRead() // 教学占位：第三方阻塞函数
+}
+```
+
+这里显式把阻塞段安排到适合阻塞 I/O 的调度器；标注 suspend 本身做不到。CPU 计算另需控制并行度；即使使用 IO，也应按数据库连接、文件句柄等资源设置容量，不能认为线程池会替业务做背压。调度器能换线程，任意 `ThreadLocal` 却不会自动获得正确的跨恢复语义。
+
+## 4. 两个请求可以并行，失败也必须有归属
+
+订单依赖用户，不能凭空并行；用户资料和独立的权益请求则可以。把这个区别写进任务结构：
 
 ```kotlin
 suspend fun loadScreen() = coroutineScope {
@@ -32,42 +65,28 @@ suspend fun loadScreen() = coroutineScope {
 }
 ```
 
-两个 async 先创建子任务，再等待结果；coroutineScope 将它们纳入同一生命周期。它不保证自动切换后台线程，也不让阻塞加载自动变成非阻塞。若推荐位允许独立失败，应另定失败边界，而不是机械地替换所有 scope。
+先创建两个子任务，再等待两个结果。普通父子结构下，一个子任务失败会影响父和兄弟；作用域不会在仍有子任务运行时正常返回。`async` 保存结果，不意味着失败只在 await 那一刻才影响父级。
 
-## 4. 取消传播与响应点
+如果推荐位失败允许降级，才需要监督关系及它自己的异常处理。`supervisorScope` 改变子失败对兄弟的影响，并不为失败自动生成默认值。更稳妥的评审问题是“哪些结果缺一不可”，然后选择任务树，而不是全局使用 SupervisorJob。异常处理细节见 [协程异常传播](https://kotlinlang.org/docs/exception-handling.html)。
 
-父任务发出取消，并不表示所有代码立刻停止。沿搜索任务继续追：挂起点、计算循环和第三方阻塞调用，各自通过什么方式响应终止？
+## 5. 取消是一项协议，不是强制中断
 
-Job.cancel 改变取消状态，挂起函数在可取消点响应；长时间纯 CPU 循环应检查 isActive 或 ensureActive。任意阻塞调用可能不响应取消，必须通过库自身关闭/取消接口衔接。适配回调时，要考虑取消与成功回调同时发生，以及资源交付后尚未被使用就取消的窗口。
+用户离开页面时，cancel 先改变 Job 状态。可取消挂起点检查这一状态；纯计算循环要主动 `ensureActive()`；不响应中断的阻塞库还需要它自己的关闭接口。这解释了为什么发出取消后，旧回调仍可能到达。
 
-不要把 CancellationException 吞掉并转成普通失败后继续循环。finally 适合关闭资源；确需挂起清理时可以在严格受限的 NonCancellable 范围执行，但不能包住整段业务，否则超时与页面离开都难以终止它。
+回调转挂起需要处理三个时序：先取消后回调、先成功后取消、资源交付但协程尚未实际使用就取消。可用 `suspendCancellableCoroutine`，但不能只写一行 resume：必须按其 API 契约解绑回调，连接底层 cancel，并为资源未被接收的窗口安排关闭。接口与重载依版本核对 [可取消挂起 API](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/suspend-cancellable-coroutine.html)。
 
-## 5. 并发请求的异常处理
+业务层还应校验账号和请求代次。取消节省资源，代次检查保护结果归属，两者职责不同。捕获异常时不要吞掉 CancellationException 后继续重试；普通清理放 finally，必须挂起的清理只在小范围、有限时间内使用 NonCancellable。
 
-生命周期与取消机制齐全后，再把它们放回业务：用户资料和权益是否必须同时成功，推荐内容能否降级，账号切换后旧结果归谁处理？
+## 6. 用时序验证设计
 
-页面同时请求用户和权益，二者缺一不可时可放在 coroutineScope 中并行 await；推荐位失败不应让页面失败，则应分离其失败边界。用户切换账号时取消旧 scope，同时在写入数据层前校验账号或请求代次，防止不可取消的旧回调串入新会话。
+教学验证可以把加载函数分别替换成可取消 delay、带检查的计算循环和不可取消回调：在同一逻辑时刻取消，记录 Job 完成、资源关闭和 UI 写入时刻。预期是三者停止路径不同，而不是取消后必然零延迟结束。
 
-## 6. 线程与恢复时序验证
-
-这些差异不能仅靠一次正常请求验证。让等待、失败和取消分别发生在不同位置，观察实际结束时刻，才能确认任务关系符合设计。
-
-分别测试可取消 delay、纯循环和阻塞库调用，比较 cancel 后任务何时结束。再注入子任务失败，比较普通 scope 与 supervisor 的兄弟行为。使用测试调度器控制挂起时间，但真实线程竞争和阻塞行为仍需独立测试。
-
-## 原理依据与适用边界
-
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
-
-- [协程编译模型](https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html)
-- [取消与超时](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
-- [异常传播](https://kotlinlang.org/docs/exception-handling.html)
+再让权益请求先失败，观察用户请求是否被取消；把权益改为可降级后，验证页面仍只发布完整的合法状态。测试调度器适合控制挂起顺序，不能证明真实多线程没有竞争。本文给出验证方案，未声称运行过设备实验；后续连续数据传递见 [Flow 的生产、缓冲与共享](#/article/flow-state)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. suspend 是什么，挂起与阻塞线程有什么区别？（回看第 1 节）
-2. CoroutineContext、Job 和 Dispatcher 分别负责什么？（回看第 2 节）
-3. 协作式取消怎样传播，哪些代码不会及时响应？（回看第 4 节）
-4. 并发请求、异常与取消怎样形成完整设计？（回看第 5 节）
-5. 怎样验证线程、恢复点和取消时序？（回看第 6 节）
+1. suspend 为什么不等于切线程？Continuation 具体保存什么？（第 1、2 节）
+2. 函数直接返回与真正挂起怎样走不同路径？（第 2 节）
+3. Dispatcher、Job 和作用域分别解决什么问题？（第 3、4 节）
+4. async 的异常为什么可能在 await 前影响父任务？（第 4 节）
+5. 取消与资源交付同时发生时，谁负责关闭资源？（第 5、6 节）

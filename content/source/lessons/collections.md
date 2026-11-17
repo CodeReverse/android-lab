@@ -1,73 +1,71 @@
-## 1. HashMap 查找与复杂度
+## 1. 从一份购物车里分出不同的数据需求
 
-我们用用户对象作为 HashMap 的 key 缓存权限，插入时正常，修改用户资料后却查不到原记录。先沿一次查找理解容器怎样定位数据，再回头看对象变化影响了哪一步。
+购物车需要按商品 ID 找记录，也需要按加入顺序展示。只用 List，查找时可能逐个比较；只用普通 HashMap，则不能依赖它的遍历顺序。集合的选择首先取决于操作与不变量：按索引访问、查键、保序、去重、并发更新分别需要什么。
 
-散列映射把 key 的 hash 分布到桶，桶内再比较相等性。平均查找效率依赖散列分布与容量；冲突过多会改变成本。JDK 某些实现使用链表与树化桶，但具体阈值、扩容迁移和树化条件属于版本实现，不应拿来当所有 Kotlin 平台的契约。
+ArrayList 以数组保存引用，索引访问直接，尾部追加通常便宜但扩容会复制；中间插入要移动后续引用。LinkedList 能在已知节点位置修改链接，但找到第 n 项仍需遍历，而且每个节点有额外存储与访问成本。“链表插入 O(1)”没有包含查找位置，因此不能直接推出购物车应该用链表。
 
-Android 运行库、桌面 JDK 和 Kotlin/Native 不是同一份实现。面试要求讲源码时，先说明观察版本，再解释为什么需要散列扰动、容量增长与冲突处理。背出数字但不能解释退化风险，不能证明理解。
+## 2. HashMap 怎样把一个键缩小到少量候选
 
-## 2. key 的相等性和稳定性
+哈希表先从 key 得到 hash，再定位桶，最后在桶中比较键。hash 相同不代表 key 相等；反过来，equals 相等的键必须满足 hashCode 相等，否则查找可能进入不同桶。
 
-查找依赖哈希定位和相等性判断，因此插入后改变参与这些判断的字段，可能让同一个对象走向不同的查找位置。key 的身份需要比展示资料更稳定。
+以 OpenJDK 21 的实现思路演算：容量 n 为 2 的幂，用混合后的 hash 与 `n - 1` 按位与定位。下面把 hash 混合步骤省略，直接给出混合后的低位，属于教学数值：
 
-如果一个对象被放入 map 后，参与 hashCode/equals 的字段改变，后续查找可能定位到不同桶，即使对象仍在集合内也找不到。data class 自动生成的方法不会消除这个问题：若关键字段可变，仍可破坏键稳定性。
-
-equals 相等必须有一致的 hashCode；反过来 hash 相同不意味着对象相等。用可变集合做 key 也有类似风险。业务上优先使用稳定 ID 或不可变值对象，避免把整份可变 UI 模型作为缓存键。
-
-下面是危险用法的 Kotlin 示意：
-
-```kotlin
-data class UserKey(var name: String)
-val key = UserKey("A")
-val cache = hashMapOf(key to "permissions")
-key.name = "B"
-// cache[key] 的查找所用哈希已可能改变，不再可靠
+```text
+容量 8，掩码 0111
+h1 = 0011 → 桶 3
+h2 = 1011 → 桶 3     两者冲突，桶内仍需比较 key
+容量 16，掩码 1111
+h1 = 0011 → 桶 3
+h2 = 1011 → 桶 11    扩容后由新增的一位区分
 ```
 
-问题不在变量 key 是否仍指向同一个对象，而在查找协议依赖的字段变了。通常用稳定用户 ID 作键，把可变资料放在 value；有意设计特殊相等语义时，再按具体实现证明不变量。
+这解释了扩容为什么能拆分某些冲突，也解释了糟糕 hash 为什么即使扩容也可能集中。树化用于缓解特定碰撞分布，不意味着所有查找恒为 O(1)。节点布局、树化阈值和 resize 路径是实现细节，不能泛化到所有 JVM 或 Android libcore；阅读时固定 [OpenJDK jdk-21+35 HashMap 源码](https://github.com/openjdk/jdk/blob/jdk-21%2B35/src/java.base/share/classes/java/util/HashMap.java)。
 
-## 3. 只读接口与不可变对象
+## 3. 键入表后变了，为什么会“丢失”
 
-为了避免修改，我们把 Kotlin 接口改成只读 List。调用方不能 add 了，但若另一处还握着原可变集合，内容是否真的不会变化？这涉及接口与对象的区别。
+```kotlin
+data class ProductKey(var id: Long)
+val key = ProductKey(1)
+val cart = hashMapOf(key to 2)
+key.id = 2
+val quantity = cart[key]
+```
 
-Kotlin List 接口不暴露修改方法，但底层仍可能是被其他持有者修改的 MutableList。把 mutableListOf 赋给 List 引用，只限制当前引用的 API，并没有复制数据，也没有冻结对象图。toList 通常生成一个集合快照，但元素本身仍可能可变，属于浅层复制。
+data class 生成的 equals/hashCode 包含主构造属性。入表时按 id=1 的 hash 定位；修改后查找按 id=2 计算，可能走另一个桶。entry 仍在表中，却不再按原来的定位规律被找到。即使偶然落在同一桶，也不能据此认为修改安全。
 
-这对 StateFlow 与 Compose 很重要：把同一个可变对象反复发布可能使相等判断看不到变化；给它加 Immutable 注解也不会神奇地变不可变。可靠做法是明确状态所有权，更新时生成新的不可变状态，或使用框架支持的可观察容器。
+修复不是“重新遍历查一遍”，而是让键的等价关系在持有期间稳定，例如不可变商品 ID。若业务需要更名，改 value；若真要换键，按旧键移除再插入，并处理冲突。这个问题属于对象身份与数据结构契约，不是 HashMap 随机坏了。
 
-## 4. fail-fast 与并发安全
+## 4. 只读接口为什么还会看到内容改变
 
-别名问题还没解决时，把集合交给多个线程会增加新的竞争。遍历时抛异常只能暴露一部分错误，不能自动形成并发协议。
+```kotlin
+val mutable = mutableListOf("A")
+val exposed: List<String> = mutable
+mutable += "B"
+// exposed 也能看到 B
+```
 
-HashMap 不是为无同步并发修改设计。ConcurrentModificationException 是错误检测机制的一种，不能把“没抛异常”当作线程安全。ConcurrentHashMap 支持并发操作，但复合动作仍需按 API 选择 compute/putIfAbsent 等方式，回调内还要避免不受控阻塞和递归更新。
+List 只限制通过这个引用调用哪些操作，没有切断别名。浅拷贝 `toList()` 可隔开列表结构的后续修改，但如果元素本身可变，双方仍指向相同元素。需要可安全发布的 UI 快照时，要同时考虑容器和元素的可变性；这也是 StateFlow 使用新对象更新的重要前提。
 
-集合选型也影响内存：小规模 Android key-value 可考虑平台提供的紧凑容器，代价可能是查询或插入成本变化。应按数据规模、读写比例和分配频率测量，不宣称一种集合永远优于另一种。
+不可变持久集合通过共享未改变的结构减少拷贝，不是把整个树每次复制；代价包括额外间接访问与实现复杂度。选择它应依据状态规模和更新模式，而非认为 Kotlin 的 List 已自动具备这一性质。类型契约见 [Kotlin 集合概览](https://kotlinlang.org/docs/collections-overview.html)。
 
-## 5. 扩容、冲突与别名验证
+## 5. 线程安全容器不能替代业务事务
 
-现在可以用小数据重现身份变化，再用不同容量与并发负载观察成本。先证明键和所有权正确，再讨论平均复杂度是否符合预期。
+把 HashMap 换成 ConcurrentHashMap 后，单次操作具有其契约中的线程安全保证，但 `if (!containsKey(k)) put(k,v)` 仍是两个操作。另一线程可以插在中间；需要单键原子操作时用 putIfAbsent/compute 等适当 API，并遵守回调约束。
 
-构造一个可变 key，插入后改变参与 hash 的字段，观察查找结果。再把可变列表暴露为只读接口并从原持有者修改，观察读取方变化。实验用于暴露所有权错误，而不是证明集合库有问题。
+如果规则是“扣库存并增加订单，两者同时成功”，它跨越多个值甚至数据库。单键 compute 不能自动保护全部不变量，需要更高层锁、事务或单一所有者。普通 HashMap 的 fail-fast 迭代也只是尽力发现结构修改，不是并发正确性的证明；未抛 ConcurrentModificationException 不代表安全。
 
-## 原理依据与适用边界
+可以设计一个可控交错：让两线程都读到缺失，再同时插入，验证业务初始化是否执行两次。测试要检查副作用次数和最终状态，不只检查表里剩几个键。详见 [Java 锁与复合不变量](#/article/java-locks?section=1)。
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+## 6. 根据负载做选择
 
-- [Kotlin 集合概览](https://kotlinlang.org/docs/collections-overview.html)
-- [HashMap API 契约](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html)
-- [Kotlin data class](https://kotlinlang.org/docs/data-classes.html)
+对购物车分别记录查找次数、顺序展示次数、平均条目数与更新方式。若只有十几项，线性扫描的简单性可能更划算；若频繁按 ID 访问并要求插入顺序，可评估 LinkedHashMap。预分配减少扩容，但过大的容量会增加空间和遍历负担。
 
-## 面经选题来源
-
-原帖仅支持选题，不代表本文全部内容是公司原题，也不用于估算行业频率。
-
-- [美团 Android 一面 · 2025-02-17](https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56)：涉及 HashMap 实现、扩容与线程安全。
+验证至少覆盖重复键、碰撞键、键变更、空值政策及并发复合操作。复杂度说明增长趋势，不能代替真实设备上的局部性、分配和负载测量。这里的演算不是性能排名；通用契约可查 [Java 21 HashMap](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. HashMap 怎样查找，平均 O(1) 依赖什么条件？（回看第 1 节）
-2. key 的 equals/hashCode 为什么必须保持稳定？（回看第 2 节）
-3. Kotlin 的只读集合为什么不等于不可变集合？（回看第 3 节）
-4. fail-fast 为什么不能提供线程安全？（回看第 4 节）
-5. 怎样验证扩容、冲突、别名与并发风险？（回看第 5 节）
+1. 为什么“链表插入快”不能直接指导容器选择？（第 1 节）
+2. hash 定桶后为什么还要 equals，扩容怎样拆开冲突？（第 2 节）
+3. 可变 key 为什么可能查不到自己？（第 3 节）
+4. List、浅拷贝和深度不可变分别保证什么？（第 4 节）
+5. 并发容器为什么保护不了跨键业务事务？（第 5、6 节）

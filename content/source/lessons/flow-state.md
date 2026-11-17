@@ -1,65 +1,95 @@
-## 1. 冷流与热流
+## 1. 一个页面为什么会发两次请求
 
-搜索框不断产生新词，页面要展示最新结果。把数据变成 Flow 后，增加第二个收集者却可能又发起一次请求。原因要从这条流在订阅时到底启动什么工作说起。
+搜索页同时在内容区和角标收集同一个 Flow，日志却出现两次查询。先看生产端：
 
-Flow 用于按序表达异步值及其处理链。常见冷流在收集时启动生产逻辑，不同收集可能分别执行；热流的生产与单个订阅者分离，状态和缓冲可被多个观察者共享。StateFlow 是持有当前值的热状态流；这不意味着每次状态变化都作为不可丢的事件送达所有订阅者。随后需要按业务决定订阅生命周期、背压与重放。
+```kotlin
+fun results(query: String): Flow<List<Item>> = flow {
+    emit(repository.search(query))
+}
+```
 
-## 2. 数据流、状态与事件
+`Item` 和 repository 是教学占位。这里返回的是冷流：描述如何生产数据，调用 results 不等于已经开始查询；每次 collect 都执行一次 flow 块。两个消费者就是两次独立执行。冷流的好处是工作归收集者，取消后上游可以结束；代价是需要共享时必须明确安排共享范围。Flow 是异步数据序列的抽象，不是天然缓存，也不是天然广播。
 
-理解订阅行为后，还要决定自己传的是一串数据、当前状态，还是必须消费的事件。三个需求看起来都能调用 collect，但允许丢失与重放的语义不同。
+## 2. 先不加线程，走一次生产和消费
 
-状态回答“现在是什么”，事件回答“刚才发生了什么”。StateFlow 持有当前值，订阅者应能从当前值恢复界面；它按 equals 合并相等值，慢订阅者可能只看到较新的状态。不能把每个计费事件都塞进 StateFlow 后期待逐条处理。
+假设上游产生 A、B、C，每次加工需要 100 ms，下游渲染每项需要 200 ms。忽略调度开销，顺序流的教学时间线是：
 
-普通 flow 构造的冷流通常在每次 collect 时重新执行上游；多个页面收集可能重复网络或数据库工作。shareIn 和 stateIn 把上游共享到一个明确作用域，必须选择启动停止策略与回放配置。热流不是自动常驻后台，实际寿命取决于持有它的 scope。
+```text
+加工 A 100 → 消费 A 200 → 加工 B 100 → 消费 B 200 → ...
+```
 
-## 3. 背压与消费策略
+emit 会等待下游处理，这就是默认的背压：慢消费者限制快生产者，避免无限堆积。三项总计约 900 ms 是该简化模型的计算值，不是设备测量值。
 
-选定流类型后，输入仍可能比处理快。每个字符都发请求时，积压来自哪里？下一步需要明确是缓存、跳过中间值，还是取消旧处理。
+加入 `buffer(1)` 后，生产和消费通过有界通道分开：消费者处理 A 时，生产者可以加工 B。队列满了仍要等待。它改变重叠程度，不会让慢消费者无限加速；也不保证必然创建另一个线程。为什么不直接无限缓冲？每项可能持有图片或大列表，延迟最终会变成内存问题。
 
-默认顺序流中，上游与下游常在同一协程依次执行；下游处理慢会推迟上游。buffer 允许一定程度并行推进，但必须选择容量和溢出语义；无限缓冲会把吞吐问题变成内存问题。conflate 保留较新值，适合可覆盖的状态，不适合必须完整处理的流水。
+`conflate` 丢弃未消费的旧值，适合只关心最新进度；`collectLatest` 取消旧值的处理块，适合可取消的搜索渲染。付款事件不能因为“更新”就丢掉，这由业务语义决定。操作符行为可核对 [Kotlin Flow 文档](https://kotlinlang.org/docs/coroutines-flow.html)。
 
-collectLatest 在新值到来时取消旧值的处理块，但取消仍是协作式的。如果处理块已经提交数据库或调用支付接口，新值并不能撤销这些副作用。搜索建议可抛弃旧计算，订单提交不可简单套用同一种策略。
+## 3. flowOn 改变的是哪一段
 
-用处理速度差异作推演：输入依次是 A、AB、ABC，而处理 A 尚未结束。buffer 允许后续值排队；conflate 可跳过部分尚未消费的中间值；collectLatest 会取消前一次处理再处理新值。
+加工搜索结果很重，希望上游在计算线程执行，UI 收集仍在主线程：
 
-取消是否及时仍取决于处理代码的协作能力。若旧请求已经在服务端产生副作用，这些消费策略都不能把它撤销。因此搜索展示与业务写入不能因为都来自 Flow 就使用同一套策略。
+```kotlin
+results(query)
+    .map { items -> rank(items) }
+    .flowOn(Dispatchers.Default)
+    .collect { items -> render(items) }
+```
 
-## 4. 上下文、异常和取消边界
+flowOn 影响它上面的生产和 map，不把下面的 collect 一并迁走。这样收集者不必知道数据源内部选什么线程。跨调度边界时会引入协调及缓冲，取消时不能假设所有已发出的在途值一定到达。
 
-背压策略只决定怎样跟上速度，并未说明计算在哪执行、异常影响哪个范围。把上下文和取消边界画出来，才能解释慢操作为何仍堵住页面。
+在普通 `flow {}` 内随意 withContext 切换后 emit，会违反该构建器的上下文约束。多协程生产可评估 channelFlow；单个计算块也可以先在其他上下文算出结果，再回到原上下文 emit。上下文保存和取消先读 [协程第 3–5 节](#/article/coroutines?section=3)。
 
-flowOn 改变它上游的执行上下文，不是把整条流的所有收集逻辑都搬到另一线程。catch 捕获上游异常，不会替你捕获下游 collect 中的所有错误。retry 重新启动上游可能再次执行副作用，必须确认上游是否幂等。
+## 4. 共享工作之前先确定谁拥有它
 
-在 UI 中按合适生命周期收集，通常使用 repeatOnLifecycle 或 Compose 的生命周期感知收集 API。停止收集与上游停止不是同一件事：共享流若在更长作用域运行，仍可能持续消耗资源。WhileSubscribed 的停止超时也应根据切换场景选择，而不是复制一个神秘常量。
+两个 UI 消费者确实需要同一份搜索状态，可以把冷流转换成由 ViewModel scope 持有的 StateFlow：
 
-## 5. 一次性事件的投递语义
+```kotlin
+val uiState = repository.observeItems()
+    .map { items -> UiState(items = items) }
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = UiState(items = emptyList())
+    )
+```
 
-搜索结果适合保留最新值，但“跳转到支付结果页”不能照搬这一语义。页面重新订阅时，旧事件是否应该再次触发，需要独立决定。
+这段代码展示所有权，不是一套完整加载错误模型。共享协程由 scope 管；订阅策略决定何时启动、停止上游。示例中的 5 秒是人为选择的停止宽限，用于跨短暂订阅中断保留上游工作，不是通用最佳值，也不是缓存过期时间。默认 replay 保留行为应与自己的重置需求一起审查。
 
-SharedFlow 无订阅者时的行为由 replay 等配置决定；extraBufferCapacity 不是离线持久消息队列。Channel 也不自动提供跨进程恢复和业务恰好一次。要展示“订单已完成”这类重要事实，优先放进可恢复状态，界面据当前事实渲染。
+StateFlow 需要初值，保存最新状态，并按 equals 合并相等值。它解决“现在是什么”，不是可靠记录“发生过几次”。shareIn 则产生 SharedFlow，replay 和缓冲需要按广播需求配置；无订阅者时的行为不能简单套用有消费者时的容量推理。契约见 [StateFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/) 与 [shareIn](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/share-in.html)。
 
-一次导航如果需要消费确认，可以定义事件 ID 与明确消费方，但要接受确认本身也有竞态。重要副作用应在业务层完成幂等，而不是要求 UI 事件机制神奇地解决所有丢失与重复。页面临时提示丢失可以接受时，则无需引入复杂持久协议。
+## 5. 状态不刷新，先检查是否真的产生新值
 
-## 6. 生命周期与重订阅验证
+如果把 `state.value.items` 强转成可变列表并原地追加，再把同一个 UiState 赋回去，旧、新状态可能 equals 相等，消费者不会看到预期变化。正确方向是产生新的状态值，同时保持旧状态不被后来修改：
 
-最后让页面离开、回来、连续输入并注入失败，分别检查生产任务、订阅次数与最终展示，避免只看一段 collect 代码判断行为。
+```kotlin
+_state.update { old -> old.copy(items = old.items + item) }
+```
 
-用三个状态快速更新和一个慢收集者观察哪些中间值被跳过，再把它换成必须逐项处理的工作队列。实验目的不是证明谁更高级，而是让你能解释所选原语允许丢弃什么。
+update 的函数可能因并发竞争重新求值，因此里面不要发送网络请求或计费。这里只计算下一个状态；外部副作用另行管理。Kotlin 只读 List 也不等于底层对象不可变，相关边界见 [集合与可变性](#/article/collections)。
 
-## 原理依据与适用边界
+同理，连续两次“支付成功”字符串不适合当作状态事件计数。需要可靠处理的业务事实应持久化、有唯一 ID 和确认状态；临时提示是否允许丢失应显式决定，不是换一个 Flow 类型就获得事务保证。
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+## 6. 收集结束以后，监听器也应结束
 
-- [StateFlow 契约](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
-- [SharedFlow 契约](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
-- [生命周期协程](https://developer.android.com/topic/libraries/architecture/coroutines)
+把定位监听封装为 callbackFlow 时，注册与解绑必须成对：
+
+```kotlin
+fun locations() = callbackFlow {
+    val listener = Listener { value ->
+        val result = trySend(value)
+        // 教学提示：按业务处理关闭或缓冲满，不能默认发送成功
+    }
+    source.register(listener)
+    awaitClose { source.unregister(listener) }
+}
+```
+
+Listener/source 是示意接口。真实适配还要处理注册异常、回调线程以及取消和解绑竞争。UI 可用 repeatOnLifecycle 在合适状态内收集：界面停止时取消收集，回到前台重新启动；它不是保证只执行一次的工具。验证时数清注册、解绑和上游查询次数，再测试慢消费者与快速切换条件。本文时间线为推导，未声明真实基准结果。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Flow 是什么？冷流和热流有什么区别？（回看第 1 节）
-2. Flow、StateFlow 与事件应如何选择？（回看第 2 节）
-3. flowOn、异常与取消的边界在哪里？（回看第 4 节）
-4. 导航、Toast、支付结果为什么不应一概当状态发送？（回看第 5 节）
-5. 怎样验证生命周期、重订阅与丢失语义？（回看第 6 节）
+1. 同一个冷 Flow 为什么能执行两次查询？（第 1 节）
+2. buffer、conflate、collectLatest 分别改变什么语义？（第 2 节）
+3. flowOn 为什么只影响上游？（第 3 节）
+4. stateIn 的 scope、订阅策略、初值各有什么责任？（第 4 节）
+5. equals、可变列表与重复业务事件怎样导致状态设计错误？（第 5、6 节）

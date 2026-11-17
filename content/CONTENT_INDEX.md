@@ -1,13 +1,13 @@
 # 知识正文与面经详解目录
 
-更新：2026-11-16。69 篇学习正文采用连续讲解与文末面试提炼；明确面经保留逐题答案。
+更新：2026-11-17。71 篇学习正文采用连续讲解与文末面试提炼；明确面经保留逐题答案。
 
 ## Android 相关技术
 
 - [Handler 原理：从线程通信到消息队列、唤醒与泄漏](source/lessons/handler.md) — 学习文章；文末复习 5 问
 - [Binder IPC：代理、线程池、同步等待与死亡恢复](source/lessons/binder.md) — 学习文章；文末复习 5 问
 - [生命周期与状态恢复：旋转、返回栈和进程死亡](source/lessons/state-restoration.md) — 学习文章；文末复习 5 问
-- [View 渲染：从 requestLayout 到屏幕上的一帧](source/lessons/view-rendering.md) — 学习文章；文末复习 4 问
+- [View 渲染：从 requestLayout 到屏幕上的一帧](source/lessons/view-rendering.md) — 学习文章；文末复习 5 问
 - [构建与发布工程：Gradle、R8、兼容性与灰度回滚](source/lessons/build-release.md) — 学习文章；文末复习 5 问
 - [Android 安全边界：组件暴露、凭据、链接与数据归属](source/lessons/android-security.md) — 学习文章；文末复习 5 问
 - [ART 内存原理：DEX 执行、对象、Native 与系统回收](source/lessons/memory-art.md) — 学习文章；文末复习 5 问
@@ -46,7 +46,7 @@
 - [锁原理：synchronized、CAS、AQS、Condition 与死锁](source/lessons/java-locks.md) — 学习文章；文末复习 5 问
 - [GC 原理：可达性、分代、写屏障、暂停与收集器](source/lessons/gc-runtime.md) — 学习文章；文末复习 5 问
 - [JMM 原理：可见性、happens-before、安全发布与原子性](source/lessons/jmm-concurrency.md) — 学习文章；文末复习 5 问
-- [运行时与并发学习地图：JVM → JMM → 线程与锁 → GC → Handler/OOM](source/lessons/runtime-roadmap.md) — 学习文章；文末复习 3 问
+- [运行时与并发学习地图：JVM → JMM → 线程与锁 → GC → Handler/OOM](source/lessons/runtime-roadmap.md) — 学习文章；文末复习 4 问
 
 ## Compose
 
@@ -103,12 +103,14 @@
 - [模型压缩与量化：INT8/INT4、PTQ/QAT、AWQ/GPTQ 与 KV 精度](source/lessons/ai-quantization.md) — 学习文章；文末复习 5 问
 - [端侧性能治理：内存、带宽、温升、Benchmark 与模型发布](source/lessons/ai-edge-performance.md) — 学习文章；文末复习 5 问
 - [端侧多模态：语音、OCR、视觉语言模型与实时流水线](source/lessons/ai-multimodal.md) — 学习文章；文末复习 5 问
-- [AI 学习地图与近期面经：从通用原理到端侧工程](source/lessons/ai-roadmap.md) — 学习文章；文末复习 3 问
+- [AI 学习地图与近期面经：从通用原理到端侧工程](source/lessons/ai-roadmap.md) — 学习文章；文末复习 5 问
+- [AI 基础：从一个函数到训练、概率、上下文与应用系统](source/lessons/ai-foundations.md) — 学习文章；文末复习 5 问
+- [从函数到 Agent：一个无需 API key 的完整教学例子](source/lessons/ai-agent-workshop.md) — 学习文章；文末复习 5 问
 
 ## 技术决策
 
-- [技术决策：如何比较方案，并为不确定性设计退出路径](source/lessons/technology-decisions.md) — 学习文章；文末复习 3 问
-- [资深 Android 能力地图：从机制到系统责任](source/lessons/senior-capability-map.md) — 学习文章；文末复习 3 问
+- [技术决策：如何比较方案，并为不确定性设计退出路径](source/lessons/technology-decisions.md) — 学习文章；文末复习 5 问
+- [资深 Android 能力地图：从机制到系统责任](source/lessons/senior-capability-map.md) — 学习文章；文末复习 5 问
 - [从概念到原理：简洁学习文章的阅读方法](source/guides/content-depth.md) — 学习指南；文末复习 3 问
 
 ## 复杂问题定位
@@ -130,7 +132,7 @@
 
 ## 项目成果与证据
 
-- [项目成果表达：把技术选择、个人贡献与证据连成一条线](source/lessons/project-evidence.md) — 学习文章；文末复习 3 问
+- [项目成果表达：把技术选择、个人贡献与证据连成一条线](source/lessons/project-evidence.md) — 学习文章；文末复习 5 问
 
 ## 面经逐题详解
 

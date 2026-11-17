@@ -1,56 +1,77 @@
-## 1. 从主线程到屏幕的一帧
+## 1. 一个进度条变化，不一定需要重新测量
 
-在商品页增加一张图片后，列表开始掉帧。图片已经加载出来，为什么滚动仍不顺？先跟随一次界面变化，看看主线程、绘制和屏幕显示之间有哪些工作。
+自定义进度条从 30% 变成 40%，它的宽高没有改变，只是填充区域变化。此时 `invalidate()` 表达绘制内容过期；如果文字从一行变成三行、期望高度变化，则需要 `requestLayout()` 重新参与尺寸与位置计算。两者不是“轻量刷新”和“重度刷新”的随意档位，而是不同的失效原因。
 
-View 层负责描述 UI 的尺寸、位置与绘制指令；最终像素还涉及渲染线程、GPU、缓冲区与系统合成。常见硬件加速路径中，主线程记录或更新显示列表，RenderThread 执行渲染相关工作，SurfaceFlinger 合成可见图层。某帧迟到可能发生在任一环节，不能只统计 onDraw 耗时。
+```kotlin
+var progress: Float = 0f
+    set(value) {
+        val next = value.coerceIn(0f, 1f)
+        if (field == next) return
+        field = next
+        invalidate()
+    }
+```
 
-Choreographer 将输入、动画与遍历等工作对齐到帧节奏。刷新周期取决于设备与运行状态：60 Hz 约 16.7 ms，120 Hz 约 8.3 ms。它不是所有方法都可各用一整个周期的额度，而且屏幕刷新时间不等于 CPU 从头到尾顺序执行的单一流水线。
+这是 View 成员示意，应在正确线程更新。若进度值同时决定 View 的期望尺寸，代码就不完整，需按尺寸变化请求布局。API 调用不意味着此刻同步完成一帧，多次变化可以在框架调度中合并。
 
-## 2. 父子测量约束
+## 2. 父亲给的不是最终尺寸，而是测量约束
 
-一帧里需要布局，但控件不能随意决定自己的大小。要解释新增图片为何影响周围文字，先沿父子关系追踪尺寸约束。
+ViewGroup 知道自己的空间和子项 LayoutParams，再构造 MeasureSpec 传给子 View。LayoutParams 是子项向父布局表达的意图；MeasureSpec 是父布局计算后传下来的约束，二者不是同一个对象。
 
-measure 接收父节点给出的 MeasureSpec；子节点结合自身内容与布局参数给出测量尺寸。EXACTLY、AT_MOST、UNSPECIFIED 表示约束语义，不等同于永远固定的 dp 数值。layout 决定最终边界，draw 使用这些边界生成绘制内容。自定义 View 的测量必须考虑 padding、建议最小值以及父约束，不能无条件返回内容理想尺寸。
+设自定义标签内容理想宽 180 px，父给 `AT_MOST 120 px`，它应在最多 120 的约束下确定宽度，并据此换行或截断；若父给 `EXACTLY 120 px`，期望宽不能覆盖这个精确约束。`UNSPECIFIED` 表示该方向没有这种上限，不等于强制尺寸为 0。
 
-requestLayout 表示布局可能失效，通常触发后续测量布局；invalidate 表示绘制内容失效，不保证重新测量。二者都不是立即在当前栈中同步完成一整帧，系统可以合并请求。尺寸变化却只 invalidate，会导致画面与布局不一致；纯颜色变化却每次 requestLayout，可能增加无谓工作。
+```kotlin
+// 教学片段：省略 padding、最小尺寸、文本测量等产品细节
+override fun onMeasure(widthSpec: Int, heightSpec: Int) {
+    val desiredWidth = 180
+    val desiredHeight = 48
+    setMeasuredDimension(
+        resolveSize(desiredWidth, widthSpec),
+        resolveSize(desiredHeight, heightSpec)
+    )
+}
+```
 
-用一个简化尺寸推演：父布局给宽度上限 300，内部有左右各 16 的占用，子内容可用宽度随之减少。文本在较窄宽度下可能换行，文本高度增加，又影响后续项目的位置。
+示例用像素演算约束，真实控件还要正确处理密度与内容。测量回答“要多大”，布局回答“放哪里”；父布局可能为了分配剩余空间再次测量子项，不能假定每帧每个 View 恰好测一次。契约见 [Android View 绘制](https://developer.android.com/guide/topics/ui/how-android-draws)。
 
-这解释了为什么“只是加了边距”也可能改变整片布局；具体 MeasureSpec、测量次数与缓存能否复用仍由控件实现和当前状态决定，不能仅按 View 数量估算耗时。
+## 3. 从失效请求走到一次遍历
 
-## 3. 测量、布局、绘制与合成瓶颈
+顶层 ViewRootImpl 协调窗口里的 View 树，布局/绘制需求会进入帧调度。Choreographer 协调与显示节奏相关的回调；一次遍历按需要做 measure、layout、draw，而不是每次 invalidate 都完整执行所有阶段。
 
-有了测量模型，还不能把所有卡顿都归为布局复杂。同一个滚动现象可能来自不同阶段，下一步要让证据指出真正拖慢的工作。
+```text
+属性变化
+  ├─ 几何需求变了 → requestLayout → 需要测量/布局
+  └─ 像素内容变了 → invalidate    → 需要重绘
+                         ↓
+                帧回调与 View 遍历
+```
 
-若列表滑动时主线程大量时间花在布局，先看嵌套层级、重复测量、文本计算和数据绑定。若主线程很轻而 GPU 或渲染阶段超时，减少透明叠加、巨大离屏层、过度绘制与高成本效果才可能有效。若主要是 Runnable 但迟迟拿不到 CPU，应调查系统负载或线程竞争，继续减少 onDraw 不一定解决它。
+为什么要分阶段？如果进度条每次颜色变化都重新测量整棵树，做了很多没有改变结果的工作；如果尺寸变化只重绘，父子位置就可能仍旧。Compose 也区分组合、测量、放置与绘制，但运行结构不同，不能直接把重组当成 View 的 requestLayout，见 [Compose 刷新阶段](#/article/compose-phases)。
 
-RecyclerView 的复用解决一部分对象创建，但不会自动解决昂贵的 bind、图片解码和频繁全量刷新。应使用稳定的数据身份与差分更新；Diff 在大列表上也有计算成本，应检查执行线程、取消旧计算和最终提交的时序。
+## 4. onDraw 结束还没有到屏幕
 
-## 4. 关键路径的对照验证
+在常见硬件加速路径里，UI 侧记录绘制操作，渲染线程及 GPU 进一步执行相关工作，应用产生的缓冲交给显示系统合成。SurfaceFlinger 与硬件合成器协调最终显示；因此 Java onDraw 很快不代表整帧没有瓶颈。
 
-假设减少嵌套后某次运行更快，仍可能只是图片缓存刚好命中。需要把布局改动与其他变量分开，才能判断关键路径是否真正缩短。
+```text
+UI 遍历/记录 → 渲染工作 → 缓冲可用 → 合成/呈现
+```
 
-用固定数据与固定滑动脚本，在接近 release 的构建上采集 FrameTimeline 与自定义 trace。只改一个因素，例如移除图片解码或降低布局复杂度，比较迟到帧比例与长尾。保留设备温度、刷新率和编译状态，不能拿一次 Debug 手滑结果作为线上收益。
+这张图只表示责任链，实际多帧可以流水重叠，还有同步 fence 和缓冲排队；不能把每段耗时简单相加后当成所有设备的帧时间。系统侧职责可查 [SurfaceFlinger 与 WindowManager](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)。
 
-## 原理依据与适用边界
+如果 UI 线程很短但 GPU 工作很重，继续减少 Java 方法调用不一定有效；若 UI 被锁卡住，减少 overdraw 也解决不了等待。先确定落后的是哪一段，再设计优化。
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+## 5. 用一帧的证据回答为什么卡
 
-- [View 自定义绘制](https://developer.android.com/develop/ui/views/layout/custom-views/custom-drawing)
-- [硬件加速模型](https://developer.android.com/develop/ui/views/graphics/hardware-accel)
-- [慢帧诊断](https://developer.android.com/topic/performance/vitals/render)
+以教学场景区分三种情况：布局嵌套导致同一子树反复测量；onDraw 每帧解码图片导致分配和计算；透明大区域叠加使绘制负担高。对应修复分别是减少无效布局依赖、把解码移出绘制并管理缓存、减少实际昂贵的绘制区域，不能统一回答“用缓存”。
 
-## 面经选题来源
+记录请求布局次数、UI/渲染线程轨迹、GPU/呈现相关时间及输入场景。60 Hz 的周期约 16.67 ms，120 Hz 约 8.33 ms，但应用实际截止时间与流水调度有关，不能把某个数字当全链路固定预算。优化前后使用相同设备、刷新率与操作，比较帧分布而非只看平均值。
 
-原帖仅支持选题，不代表本文全部内容是公司原题，也不用于估算行业频率。
-
-- [小米安卓一二面 · 2025-10-27](https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349)：涉及 View 绘制与渲染。
+这些是验证方案，未进行设备基准。更完整的控制变量方法见 [性能证据](#/article/performance-proof)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. View 的一帧从主线程怎样到达屏幕？（回看第 1 节）
-2. measure 的约束从哪里来，父子如何协作？（回看第 2 节）
-3. 卡顿怎样区分测量、布局、绘制与合成瓶颈？（回看第 3 节）
-4. 怎样证明某个布局优化真正缩短关键路径？（回看第 4 节）
+1. 进度变化为什么通常不需要 requestLayout？（第 1 节）
+2. LayoutParams 与 MeasureSpec 的关系是什么？（第 2 节）
+3. 测量、布局、绘制为什么分开，为什么可能重复测量？（第 2、3 节）
+4. onDraw 很快为什么仍可能掉帧？（第 4 节）
+5. 如何区分布局、主线程阻塞与 GPU 瓶颈？（第 5 节）

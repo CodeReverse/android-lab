@@ -1,65 +1,76 @@
-## 1. KMP 与共享 UI 的层次
+## 1. 两端重复的是规则，未必是界面
 
-Android 和 iOS 的购物车逻辑越来越像，但页面仍希望遵循各自平台习惯。是否一定要连 UI 一起共享？先区分共享业务逻辑与共享界面这两种目标。
+Android 与 iOS 都要计算优惠资格，但两端 UI 已成熟且交互不同。若为了共享规则而重写两端页面，收益与成本不匹配。Kotlin Multiplatform 可以先共享领域规则、数据与部分基础设施，保留平台 UI；是否共享 UI 是另一项选择，不是使用 KMP 的前提。
 
-Kotlin Multiplatform 允许在公共源集中共享适合跨平台的逻辑，同时保留平台专属实现。Compose Multiplatform 进一步提供共享 UI 的路线，二者不是同义词。可以共享网络、数据与领域逻辑而继续使用原生 iOS UI，也可以在验证后共享部分界面。
-
-如果真正重复的是规则计算和数据协议，直接从共享 UI 入手可能扩大迁移面。反过来，页面交互高度一致、团队能够承担平台适配时，只共享底层又可能放弃可获得的 UI 复用收益。选择应从重复成本与平台差异出发。
-
-## 2. 公共逻辑与平台实现
-
-决定先共享价格计算后，下一步要把平台能力从公共逻辑里分开。否则 commonMain 虽然能编译，核心业务仍会被权限、存储或界面对象绑住。
-
-公共代码只能依赖相应可用 API。expect/actual 用于表达必要的平台差异，接口与依赖注入也能建立边界；过度使用 expect/actual 会让公共层暴露大量平台细节，增加测试和理解成本。更好的边界往往是业务能力接口，例如安全存储、时间源和平台通知，而不是把所有 Android 类逐一映射到 iOS。
-
-平台库选择要检查 Android、iOS 等实际目标的支持与维护状态。JVM 库可用不等于 Kotlin/Native 可用。公共 API 中泄漏平台对象，会削弱复用并让调用方承担不必要转换。
-
-可以先把购物车切成两侧：
-
-```text
-共享：价格规则、优惠状态、领域校验、可测试的数据转换
-平台：安全存储实现、支付入口、权限与系统交互
-边界：输入数据 / 结果与错误 / 取消和生命周期契约
+```kotlin
+// commonMain：纯领域规则，无 Android/iOS 类型
+fun eligible(totalCents: Long, minimumCents: Long): Boolean =
+    totalCents >= minimumCents
 ```
 
-例如公共计算不需要拿到 Activity 或 UIViewController。平台入口提供必要能力，公共逻辑返回业务结果；共享目标因此能独立于具体页面验证。
+金额用整数最小货币单位是本例的建模选择，真实多币种与舍入规则还需独立处理。最容易共享的不是“所有 Kotlin 文件”，而是输入、输出和依赖都清楚的规则。源码集关系见 [跨平台共享代码](https://kotlinlang.org/docs/multiplatform/multiplatform-share-on-platforms.html)。
 
-## 3. Swift 互操作语义
+Compose Multiplatform 是在多平台上共享 Compose UI 的工具包，与 KMP 的逻辑共享层次不同。可以只用 KMP 保留 UIKit/Android UI，也可以再选择共享部分 UI；平台专有 API 和宿主互操作仍要处理。两者与 Jetpack Compose 的关系见 [JetBrains 官方说明](https://kotlinlang.org/docs/multiplatform/compose-multiplatform-and-jetpack-compose.html)。
 
-公共模块可以被 iOS 调用了，但 Kotlin 中看起来自然的异步、错误和取消语义，未必直接成为 Swift 调用方需要的接口。边界需要明确契约。
+## 2. 平台依赖怎样留在边缘
 
-Kotlin/Native 与 Swift/Objective-C 的导出形式、异常、协程取消、Flow 桥接和对象寿命都需要按所用工具链确认。不能以“现代内存管理器不再要求旧冻结模型”推导出所有共享对象自动线程安全。并发不变量仍由应用负责。
+规则需要当前时间，直接调用 Android API 就把 commonMain 绑到单一平台。可通过接口注入：
 
-公开 API 应尽量简单、稳定，明确异步完成、取消和错误语义。若 iOS 调用者需要理解大量 Kotlin 特有泛型与包装类型，表面共享率高，接入成本却可能转移给 iOS 团队。
+```kotlin
+interface Clock { fun nowMillis(): Long }
+class OfferPolicy(private val clock: Clock) {
+    fun active(expiresAt: Long) = clock.nowMillis() < expiresAt
+}
+```
 
-## 4. 共享 UI 的平台适配
+测试可以传固定时钟；Android/iOS 分别提供实现。expect/actual 也能声明平台差异，但不必把每个依赖都写成它。普通接口适合运行时替换与测试，expect/actual 适合编译期平台实现关系；选择取决于变化轴，而非“跨端就必须 expect”。
 
-如果继续把 UI 也共享，仍要面对系统返回、输入法、无障碍与窗口差异。共享更多代码只是扩大复用范围，不会自动删除平台责任。
+若服务端时间才是业务权威，本地时钟只是展示辅助。共享代码能保证同样算法，不保证输入可信。API 语法与限制见 [Expected and actual declarations](https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html)。
 
-CMP 仍需要验证文本、输入法、无障碍、导航返回、系统窗口与平台控件互操作。组件能画出来不等于达到产品质量。平台视觉差异是需求时，应允许平台分支或原生页面，而不是把百分之百共享当作 KPI。
+## 3. 共享网络层以后还会遇到平台寿命
 
-对于存量 App，先共享一个边界清晰且双端规则重复的模块，例如价格计算或协议解析。保留契约测试，以同一组输入验证两个平台行为。随后才评估数据层与 UI 的扩大范围，避免一开始把构建、依赖与页面栈同时重写。
+仓库返回 Flow，Android 可以按 ViewModel/Lifecycle 收集；Swift 侧仍要决定谁订阅、何时取消、错误怎样表示和结果在哪个线程更新 UI。导出 suspend 或 Flow 不自动替 iOS 建立完整生命周期。
 
-## 5. 复用收益与一致性验证
+```text
+iOS 页面出现 → 创建订阅句柄
+收到状态 → 切到 UI 所需上下文 → 更新当前页面
+页面离开 → 取消句柄 → 上游资源按协议释放
+```
 
-最后按业务能力检查收益：重复逻辑是否减少、变更是否更一致，以及平台适配和排错是否变得更贵。
+这是跨语言契约示意，不代表某个互操作插件的固定 API。不同 Kotlin/Swift 导出方案的泛型、异常、异步映射能力不同，必须固定工具版本验证。不要在 commonMain 中隐藏一个永不取消的全局 scope，否则两端都可能泄漏同一类后台工作。
 
-为一个共享规则建立双平台契约样例，测试正常、边界、时区、语言和取消。再测 iOS 导出 API 使用体验与二进制/构建变化。公开 App 案例只采用有时间与团队范围的资料，不把一次分享推断为全 App 迁移。
+协程的取消原理见 [协程第 5 节](#/article/coroutines?section=5)；平台适配层负责把它接到具体生命周期，领域层不应引用 Activity 或 UIViewController。
 
-## 原理依据与适用边界
+## 4. Kotlin/Native 的内存不能按旧经验背诵
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+现代 Kotlin/Native 使用共享堆与追踪式 GC；旧内存模型里关于跨线程冻结的限制不能直接套到当前项目。另一方面，能跨线程访问不等于可以无同步地修改共享状态，数据竞争依然要治理。
 
-- [KMP 官方概览](https://kotlinlang.org/docs/multiplatform/kmp-overview.html)
-- [expect/actual](https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html)
-- [Kotlin/Native 内存管理](https://kotlinlang.org/docs/native-memory-manager.html)
+与 Swift/Objective-C 互操作还跨越 GC 与 ARC 的边界。一个长期保存的回调可能间接保留另一侧对象，释放时机也不能用“Swift 引用计数为零就立即释放整张跨语言图”概括。机制与版本信息查 [Kotlin/Native 内存管理](https://kotlinlang.org/docs/native-memory-manager.html) 和 [ARC 集成](https://kotlinlang.org/docs/native-arc-integration.html)。
+
+教学验证应反复创建/关闭订阅，观察两侧对象与任务是否结束；不要只测公共单元测试通过就认为平台资源没问题。
+
+## 5. 代码复用率不是唯一决策指标
+
+假设共享规则消除了两端折扣不一致，却让每次 iOS 构建和调试复杂很多。净收益需要同时计入规则一致性、交付节奏、平台能力接入、二进制与启动、故障定位和团队维护成本。
+
+|方案|更直接的收益|需要承担的边界|
+|---|---|---|
+|独立原生实现|平台集成与独立演进直接|重复规则与一致性测试|
+|KMP 共享逻辑|共用规则/数据，保留平台 UI|导出、构建、异步和资源生命周期|
+|共享 UI 框架|进一步共享交互实现|渲染、设计差异、插件与宿主集成|
+
+这是选择维度，不是固定优劣排名。公开 App 案例只能证明特定时间的特定采用，不能推测当前全量覆盖；需要应用案例时应回到项目已有的跨端来源清单，逐条确认日期和范围。
+
+## 6. 用一个可撤回的模块完成技术试验
+
+先选优惠规则或离线同步中的纯逻辑模块，保留平台适配接口和原实现。为两端运行相同输入输出契约，再增加取消、错误、并发与升级验证。若只共享了最简单函数，就不能据此推断复杂网络/数据库互操作同样无成本。
+
+试验输出应写“已验证的范围、未覆盖的风险、继续/停止条件”，而不是一个复用百分比。本文示例为原创教学，没有宣称某公司实际迁移效果；决策记录写法见 [技术决策](#/article/technology-decisions)。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. KMP 与 Compose Multiplatform 分别共享哪一层？（回看第 1 节）
-2. commonMain、平台实现与 expect/actual 怎样划界？（回看第 2 节）
-3. 共享逻辑到 Swift 边界还需处理哪些语义？（回看第 3 节）
-4. 共享 UI 之后哪些平台适配工作仍然存在？（回看第 4 节）
-5. 怎样验证复用收益与平台行为一致性？（回看第 5 节）
+1. 为什么共享逻辑与共享 UI 要分开决策？（第 1 节）
+2. 接口注入和 expect/actual 各适合什么边界？（第 2 节）
+3. Flow/suspend 导出为什么还需要平台生命周期协议？（第 3 节）
+4. 当前 Native 内存模型与旧冻结规则怎样区分？（第 4 节）
+5. 怎样用可撤回试验评估真实收益？（第 5、6 节）

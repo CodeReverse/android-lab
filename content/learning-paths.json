@@ -57,13 +57,14 @@
     "tracks": []
   },
   "ai": {
-    "title": "AI：从通用原理到端侧工程",
+    "title": "AI：从基础概念到 Agent 与端侧工程",
     "category": "ai",
     "overview": "ai-roadmap",
-    "description": "按问题选择主线，自由跳读；原理、工程取舍、面经解答分开查阅。",
+    "description": "先建立模型、训练、推理与上下文概念，再运行最小 Agent；按问题进入原理、RAG、质量与端侧。",
     "core": [
+      "ai-foundations",
+      "ai-agent-workshop",
       "ai-transformer",
-      "ai-inference",
       "ai-rag-pipeline",
       "ai-agent-runtime",
       "ai-quality",
@@ -71,6 +72,15 @@
     ],
     "stages": {},
     "tracks": [
+      {
+        "title": "先建立基础与完整闭环",
+        "description": "不预设 AI 基础：函数与参数 → 训练/推理 → 概率与上下文 → 最小 Agent → RAG 诊断",
+        "articles": [
+          "ai-foundations",
+          "ai-agent-workshop",
+          "ai-evaluation"
+        ]
+      },
       {
         "title": "大模型原理与推理",
         "description": "从 token 和训练方法到 KV 内存与服务调度",
@@ -104,12 +114,11 @@
       },
       {
         "title": "质量与研发实践",
-        "description": "评测、代码审查、流式体验与原有入门文章",
+        "description": "从评测判据到代码验证、流式协议与证据",
         "articles": [
           "ai-quality",
           "ai-coding",
-          "ai-client",
-          "ai-evaluation"
+          "ai-client"
         ]
       },
       {

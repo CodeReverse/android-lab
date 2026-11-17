@@ -1,118 +1,113 @@
-## 1. Handler 的线程通信职责
+## 1. 从后台结果回到主线程
 
-后台下载结束后，需要更新页面。调用 `handler.post` 看起来像“切到主线程”，但是谁执行这段代码、为什么它会在另一个线程继续？先确认 Handler 在通信中承担什么角色。
-
-Handler 向指定 Looper 的队列提交工作，并在该 Looper 所属线程处理消息。它既不是线程，也不会创建线程。执行位置取决于绑定的 Looper，而不是调用 post 的线程；异步 Handler 也不代表后台线程。
-
-## 2. 消息循环的四个角色
-
-既然 Handler 本身不是线程，就必须有地方保存任务，也必须有执行循环把任务取出来。把这几个角色分开，一次 post 才不再像黑盒。
-
-Message 保存目标、回调、数据和调度时间；MessageQueue 管理待处理消息；Looper 循环取出并分派消息；Handler 提供发送和处理入口。一个 Looper 可服务多个 Handler，但它们仍在同一线程串行执行，一个长回调会延后后续消息。
-
-## 3. Looper 与线程绑定
-
-角色齐全之后，新建一个普通线程却仍不能直接获得消息循环。Looper 与当前线程的绑定，需要在线程准备阶段建立。
-
-Looper.prepare 通过 ThreadLocal 建立当前线程的 Looper，并禁止重复准备。主线程由框架准备；普通线程需显式准备并进入 loop 才会消费消息。HandlerThread 封装了这一生命周期。ThreadLocal 负责绑定，队列的跨线程访问另需同步；退出后投递可能失败。
-
-## 4. 消息投递到分派
-
-绑定完成后，沿同一个下载回调走一次：Runnable 怎样进入 Message，又在哪个分派分支真正被调用。
-
-以 AOSP android-14.0.0_r1 为基线，执行链是：
-
-`sendMessageAtTime → enqueueMessage → MessageQueue.next → Looper → Handler.dispatchMessage`
-
-post 把 Runnable 放入 Message.callback。分派时优先运行它，其次尝试 Handler.Callback，未消费时才调用 handleMessage。因此重写 handleMessage 不会截获所有 post。消息存在复用池与 in-use 约束，入队后不要重复发送或修改同一 Message。
-
-用 Kotlin 写一个绑定目标线程的示意：
+下载线程拿到图片后不能随意修改 View，我们先把界面更新交给主线程：
 
 ```kotlin
 val uiHandler = Handler(Looper.getMainLooper())
-// 在下载完成回调中提交；不要在此示例里执行阻塞下载
+// result 是已经准备好的结果，不在 lambda 中执行阻塞下载
 uiHandler.post { renderResult(result) }
 ```
 
-调用 post 的线程负责提交，绑定的 Looper 所在线程稍后执行 lambda。若这段 lambda 仍包含大计算，它依旧会阻塞目标线程；Handler 改变执行位置，不会自动减少工作量。生命周期取消将在后面的引用链讨论中补上。
+post 的调用发生在下载线程，lambda 的执行发生在绑定的 Looper 线程。Handler 没有创建线程，只是提交工作。若 lambda 里又解码大图或等待网络，主线程依然会卡住。这里真正需要解释的是：任务存在哪里，主线程什么时候取，怎样从睡眠中被唤醒。
 
-## 5. 多线程入队与同步
+本文源码基线固定为 AOSP `android-14.0.0_r1`，不把该标签的队列内部结构当成所有后续 Android 版本的保证。公开 API 参见 [Handler](https://developer.android.com/reference/android/os/Handler)。
 
-下载线程和 UI 线程同时碰到队列，线程本地的 Looper 关联并不能保护共享队列。需要继续看入队与取出的同步关系。
+## 2. 四个角色连接一次执行
 
-上述版本用临界区保护队列结构，并结合队列状态决定唤醒。Looper 的线程本地绑定不能替代这种同步。业务载荷也需要所有权协议：发送者入队后继续修改同一对象会引入竞争，宜传不可变快照或明确移交所有权。
+```text
+发送线程 → Handler → MessageQueue
+                         ↓ next()
+目标线程 → Looper.loop → Handler.dispatchMessage → Runnable
+```
 
-## 6. 阻塞等待与唤醒
+Message 保存任务数据、目标 Handler 与调度时间；MessageQueue 保存待处理消息；Looper 在所属线程循环取得可运行消息；Handler 负责提交与分派。多个 Handler 可以共用同一 Looper，因此不能靠创建更多主线程 Handler 获得并行。
 
-队列受保护后，如果没有任务，循环是否会把 CPU 转满？下一步要把“循环仍然存在”与“线程正在忙执行”分开。
+普通线程要先 `Looper.prepare()` 再进入 `Looper.loop()` 才会消费消息；ThreadLocal 建立当前线程与 Looper 的关联，不负责同步所有发送者对队列的访问。HandlerThread 封装了常见的准备和循环过程。主线程的这些准备由框架完成，应用不应再次 prepare。
 
-队列没有到期可执行消息时，nativePollOnce 进入等待；新工作改变等待条件时，队列按需调用 nativeWake。它不是持续空转，也不是每次 post 都无条件唤醒。
+## 3. Runnable 为什么没有走 handleMessage
 
-同标签的 native Looper 使用 epoll 等待和 eventfd 唤醒：写入 eventfd 令其可读，等待返回后消费事件并重新检查工作。唤醒只表示重新检查条件，不等于消息已经执行。Java 队列同步和 native 等待共同处理检查、入睡与入队之间的竞态。
+post 会把 Runnable 放入 Message.callback。分派的关键顺序可以写成下面的教学伪代码：
 
-## 7. 延迟消息与时钟
+```text
+dispatch(message):
+  if message.callback exists:
+    run(message.callback)
+  else if handlerCallback exists and consumes(message):
+    return
+  else:
+    handleMessage(message)
+```
 
-等待预算与消息时间有关，因此 postDelayed 只给出调度条件。即使时间到了，前面的长回调仍可能让下载提示延后。
+因此 override handleMessage 不是拦截所有 post 的入口。Message.target 则决定由哪个 Handler 分派；它与 Message.callback 是两个不同字段。源码可对照 [Handler.java](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/Handler.java) 的 post、enqueueMessage 与 dispatchMessage。
 
-postDelayed 指定最早可执行时间，时基与 uptimeMillis 相关；深度休眠、前置任务和线程调度都可能使实际执行更晚。例如消息计划在 100 ms 运行，而当前回调到 180 ms 才返回，它不能抢占该回调。跨休眠定时需求应另选适合的系统调度能力。
+消息对象可能从池复用。入队后再修改载荷或重复发送同一个 Message，会破坏所有权与时序假设；发送可变业务对象也不能靠队列自动消除后续并发修改。
 
-## 8. 同步屏障与异步消息
+## 4. 队列按时间安排，执行却仍是串行
 
-某些消息已经到期却暂时未被选中，还可能与同步屏障有关。这里的异步描述队列选择语义，不是新建执行线程。
+在本标签中，队列以链接结构组织消息，入队和取出关键路径使用同步保护。假设当前 uptime 为 0，三条普通消息的 when 分别为 100、30、60，队列会优先考虑 30，而不是按三次调用的先后固定 FIFO。
 
-在上述队列实现中，同步屏障暂缓其后的同步消息，允许符合条件的异步消息被选中；它不打断已运行的回调，也不改变执行线程。没有屏障时，异步消息不是普遍最高优先级。屏障未移除可能导致饥饿，应用不应依赖隐藏接口插入屏障或把全部消息改异步来掩盖问题。
+```text
+队列：B(30) → C(60) → A(100)
+若 B 从 30 执行到 110：C 最早只能在 110 后执行
+```
 
-## 9. 空闲回调与退出
+这是手工演算，不是实测时间。postDelayed 给最早可调度时间，不能抢占正在运行的 B。使用 uptime 时基也意味着深度休眠等因素会影响实际墙钟等待；它不是跨休眠的精准闹钟。若业务需要系统级定时，必须另选符合后台限制的机制。
 
-队列空闲时可以安排工作，但“此刻没任务”不等于以后没有输入。退出线程时也需要明确哪些工作继续、哪些被丢弃。
+## 5. 没有任务时为什么不会把 CPU 转满
 
-IdleHandler 在符合空闲条件时运行，但重任务仍会阻挡随后到来的输入。quit 退出循环并丢弃相应工作；quitSafely 在契约范围内处理已到期工作后退出，不会等完全部未来延迟消息。投递成功也不代表业务已完成。
+取消息时，若下一条还没到期，会计算等待时间；若没有可执行消息，可能进入无限等待。nativePollOnce 将线程置于 native 等待机制中，循环存在不等于持续执行指令。
 
-## 10. 消息引用与页面泄漏
+```text
+检查队列 → 无到期消息 → 等待
+发送者插入更早可执行的消息 → 按条件 nativeWake
+等待返回 → 重新检查队列 → 取出并执行
+```
 
-消息执行机制清楚后，再回看页面退出：下载回调若仍留在队列中，它捕获的页面对象会怎样被保留？
+为什么不是每次 post 都 wake？假如线程已计划在 30 时醒来，新消息到期时间为 80，就没有必要为它提前唤醒；而新消息在 10 到期，通常要更新等待。实际条件还包括是否已经阻塞及屏障状态。同步保护和唤醒协议一起避免“检查完准备睡眠时错过新工作”的竞态。源码见 [MessageQueue.next / enqueueMessage](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/MessageQueue.java)。
 
-典型保留链是：存活线程 → Looper → 队列 → Message → Runnable/Handler → Activity。即使 Handler 是静态内部类，Runnable 仍可能捕获页面。页面级任务应在生命周期结束时撤销，长期任务交给相应所有者。共享 Handler 上无差别清空回调会误删其他任务，应按回调或 token 管理；弱引用不能代替取消。
+## 6. 同步屏障只改变选择，不创造线程
 
-## 11. nativePollOnce 与 ANR 证据
+框架某些调度路径会插入同步屏障。本标签用特殊队列节点表达屏障；当它挡在选择位置时，普通同步消息暂缓，队列寻找可运行的异步消息。
 
-看到内存或卡顿问题后，单次主线程栈仍可能误导。native 等待可能只是正常空闲，必须把快照放回故障时间线。
+```text
+屏障 → 普通消息 A → 异步消息 B
+选择可能越过 A 处理 B；A 没有被删除，也没换线程
+```
 
-单独看到 nativePollOnce 无法确定 ANR 根因：它可能是正常空闲，也可能采样时阻塞已结束。需对齐故障时间窗、调度、锁和 Binder 等待链。
+“异步 Handler”因此不是后台 Handler，也不是永远比所有消息优先。没有屏障时仍按正常条件安排，正在执行的任务也不会被它打断。屏障若长期不移除可能让同步消息饥饿；应用不应通过隐藏接口自行插屏障，或把所有任务改异步来掩盖卡顿。
 
-记录入队、计划执行和分派起止：排队长而回调短，查前置阻塞；回调本身长，查计算、IO 或锁。进一步阅读 [ANR 等待链](#/article/anr-diagnosis)。
+## 7. 空闲与退出都需要明确契约
 
-## 12. 消息时序的验证
+IdleHandler 适合观察或安排少量空闲工作，但“现在没到期消息”不能保证接下来一段时间没有用户输入。一个 100 ms 的空闲回调开始后，新输入仍可能被它挡住。因此把所有初始化塞入 IdleHandler，只是把工作移到了另一处。
 
-现在用带时间戳的任务验证提交、排队、唤醒和执行，再用页面引用链验证取消。这样每个现象都能对应一个机制。
+quit 请求退出，quitSafely 在相应契约下处理已经到期的工作后退出，并不等待全部未来延迟任务。发送成功只表示队列接受了消息，不是业务已完成。需要完成确认时，应另设结果或状态协议。主 Looper 不能由应用随意退出；后台 HandlerThread 的停止也要与资源关闭配套。可查 [Looper](https://developer.android.com/reference/android/os/Looper)。
 
-在隔离调试场景投递一个可控长任务和两条带时间戳的短任务，比较计划时间与实际分派，验证串行和延后；再对比页面退出前取消与未取消延迟回调时的引用链。保留版本、时间线和存活对象，不在真实主流程注入阻塞，也不使用隐藏屏障 API。此处是验证设计，未执行设备实验。
+## 8. 页面泄漏沿着消息所有权追
 
-## 原理依据与适用边界
+```text
+存活线程 → Looper → 队列 → Message → Runnable → Activity
+```
 
-实现细节以项目依赖版本为准；下列资料用于核对机制。文中实验为验证设计，未声明已执行。
+页面离开不改变这条引用路径。静态 Handler 也不够：Runnable 仍可以捕获 Activity。页面拥有的任务，应保存可取消的具体回调并在相应生命周期结束时撤销：
 
-- [Handler API 与调度时基](https://developer.android.com/reference/android/os/Handler)
-- [AOSP android-14.0.0_r1 Handler](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/Handler.java)
-- [AOSP android-14.0.0_r1 MessageQueue](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/MessageQueue.java)
-- [AOSP android-14.0.0_r1 Looper](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/os/Looper.java)
-- [LeakCanary 工作机制](https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/)
+```kotlin
+private val refresh = Runnable { renderCurrentPage() }
+fun schedule() { handler.postDelayed(refresh, 1_000) }
+fun stopPageWork() { handler.removeCallbacks(refresh) }
+```
 
-- [AOSP android-14.0.0_r1 native Looper：eventfd / epoll](https://android.googlesource.com/platform/system/core/+/android-14.0.0_r1/libutils/Looper.cpp)
+这段示例只撤销该回调，避免清空共享 Handler 的全部工作。若回调已经执行，removeCallbacks 不能回滚它；异步结果还需检查代次和所有者。弱引用最多改变对象保留关系，不能代替停止无用下载、数据库写入或重复计时器。
 
-## 面经选题来源
+## 9. 用排队时间与执行时间定位卡顿
 
-原帖仅支持选题，不代表本文全部内容是公司原题，也不用于估算行业频率。
+为同一条任务记录投递时刻、计划时刻、实际开始和结束。排队很久但执行很短，查前置任务、锁或系统调度；执行本身很长，再查回调内部计算、I/O 与等待。把这些时刻放到故障时间窗里，才能解释用户看到的延迟。
 
-- [美团 Android 一面 · 2025-02-17](https://www.nowcoder.com/feed/main/detail/592247f523b64d45bb0dd5f28bdfaf56)：涉及 Handler 导致的内存泄漏。
-- [小米安卓一二面 · 2025-10-27](https://www.nowcoder.com/feed/main/detail/2f0777d95e974ce686abc063a75f5349)：涉及主线程 Looper 与 Handler。
+单张栈里出现 nativePollOnce 常见于空闲，也可能是采样时卡顿已经结束，不能独立定罪。完整排查见 [ANR](#/article/anr-diagnosis)。教学验证可在隔离环境安排可控长任务与短任务，比较预期和实际顺序，再检查页面退出后回调与对象数量；本文未运行设备实验。
 
 ## 面试提炼
 
-以下问题用于检验理解，属于本站复习提炼；对应的机制与边界已在正文讲解。
-
-1. Handler 是什么？它解决什么问题？（回看第 1 节）
-2. Handler、Looper、MessageQueue、Message 各负责什么？（回看第 2 节）
-3. postDelayed 保证到点执行吗？用的是什么时间？（回看第 7 节）
-4. 主线程栈看到 nativePollOnce 能判定 ANR 根因吗？（回看第 11 节）
-5. 怎样用实验把回答验证出来？（回看第 12 节）
+1. Handler 为什么不负责创建线程，四个角色怎样协作？（第 1、2 节）
+2. post 为什么可能绕过 handleMessage？（第 3 节）
+3. 延迟消息为何不保证准时，等待为何不忙轮询？（第 4、5 节）
+4. 异步消息、屏障与 IdleHandler 分别改变什么？（第 6、7 节）
+5. 如何同时验证任务取消、页面保留和排队延迟？（第 8、9 节）

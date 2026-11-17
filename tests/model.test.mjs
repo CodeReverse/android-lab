@@ -93,7 +93,7 @@ test("content is complete, searchable, and canonical links are preserved", () =>
   for (const a of data.articles) {
     assert.ok(a.markdown.length > 100, a.id);
     assert.ok(a.html.length > 100, a.id);
-    assert.ok(a.toc.length, a.id);
+    if (/^#{1,6} /m.test(a.markdown)) assert.ok(a.toc.length, a.id);
   }
   assert.ok(searchArticles(data.articles, "Snapshot").length);
   assert.ok(searchArticles(data.articles, "状态").length);
